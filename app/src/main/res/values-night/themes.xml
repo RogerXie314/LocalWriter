@@ -12,10 +12,12 @@
         <item name="android:statusBarColor">@color/night_surface</item>
         <item name="android:navigationBarColor">@color/night_surface</item>
         <item name="android:windowLightStatusBar">false</item>
+        <!-- 打孔屏/刘海屏适配（与日间主题保持一致）-->
+        <item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>
     </style>
 
+    <!-- 编辑器沉浸主题（shortEdges 已在基础主题声明，无需重复）-->
     <style name="Theme.LocalWriter.Editor" parent="Theme.LocalWriter">
-        <item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>
     </style>
 
     <style name="Theme.LocalWriter.Auth" parent="Theme.Material3.DayNight.NoActionBar">
@@ -24,5 +26,7 @@
         <item name="android:navigationBarColor">@android:color/transparent</item>
         <item name="android:windowLightStatusBar">false</item>
         <item name="android:windowLightNavigationBar">false</item>
+        <!-- 打孔屏适配 -->
+        <item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>
     </style>
 </resources>

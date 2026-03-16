@@ -8,15 +8,20 @@
         <item name="colorOnSecondary">@color/white</item>
         <item name="android:statusBarColor">@color/primary_dark</item>
         <item name="android:windowBackground">@color/background</item>
-    </style>
-
-    <!-- 编辑器沉浸主题 -->
-    <style name="Theme.LocalWriter.Editor" parent="Theme.LocalWriter">
-        <item name="android:windowFullscreen">false</item>
+        <!--
+            打孔屏 / 刘海屏适配：内容延伸到挖孔区域两侧，避免在荣耀 Magic / 小米等
+            打孔屏手机上内容被安全区域缩得过小（shortEdges = 短边允许延伸）。
+            对所有 Activity 生效，无需逐 Activity 单独声明。
+        -->
         <item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>
     </style>
 
-    <!-- 认证界面 -->
+    <!-- 编辑器沉浸主题（继承基础主题，shortEdges 已在基础主题声明）-->
+    <style name="Theme.LocalWriter.Editor" parent="Theme.LocalWriter">
+        <item name="android:windowFullscreen">false</item>
+    </style>
+
+    <!-- 认证界面（温暖米色背景）-->
     <style name="Theme.LocalWriter.Auth" parent="Theme.LocalWriter">
         <item name="android:windowBackground">@color/auth_bg</item>
     </style>

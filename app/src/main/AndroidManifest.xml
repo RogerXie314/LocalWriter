@@ -24,6 +24,7 @@
         <activity
             android:name=".ui.auth.AuthActivity"
             android:exported="true"
+            android:theme="@style/Theme.LocalWriter.Auth"
             android:windowSoftInputMode="adjustResize"
             android:screenOrientation="portrait">
             <intent-filter>
@@ -36,6 +37,7 @@
         <activity
             android:name=".ui.auth.RegisterActivity"
             android:exported="false"
+            android:theme="@style/Theme.LocalWriter.Auth"
             android:screenOrientation="portrait" />
 
         <!-- 主界面 -->
@@ -48,6 +50,7 @@
         <activity
             android:name=".ui.editor.EditorActivity"
             android:exported="false"
+            android:theme="@style/Theme.LocalWriter.Editor"
             android:windowSoftInputMode="adjustResize" />
 
         <!-- 阅读器 -->

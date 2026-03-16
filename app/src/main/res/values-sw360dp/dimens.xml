@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  适用于最小宽度 ≥ 360dp 的设备（绝大多数现代 Android 手机，包括荣耀 Magic 6 Pro ≈ 427dp）
+  导航面板宽度 280dp，在 360~600dp 屏幕上占比 46~78%，符合 Material Design 侧边栏规范。
+-->
+<resources>
+    <dimen name="nav_panel_width">280dp</dimen>
+    <dimen name="toolbar_height">56dp</dimen>
+    <dimen name="content_padding_horizontal">16dp</dimen>
+    <dimen name="content_padding_vertical">20dp</dimen>
+    <dimen name="card_corner_radius">8dp</dimen>
+    <dimen name="item_margin">8dp</dimen>
+    <dimen name="fab_margin">16dp</dimen>
+    <dimen name="quick_input_bar_height">48dp</dimen>
+</resources>

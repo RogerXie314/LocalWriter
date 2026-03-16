@@ -61,7 +61,8 @@
         android:id="@+id/rvBooks"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:paddingTop="52dp"
+        android:paddingTop="56dp"
+        android:clipToPadding="false"
         app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"/>
 
     <!-- 空状态 -->

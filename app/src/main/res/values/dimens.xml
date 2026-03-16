@@ -1,11 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  默认尺寸（最小宽度 < 360dp 的小屏手机 fallback，如早期低端机型）
+  ≥ 360dp 的设备会优先使用 values-sw360dp/dimens.xml
+-->
 <resources>
-    <dimen name="nav_panel_width">280dp</dimen>
+    <dimen name="nav_panel_width">240dp</dimen>
     <dimen name="toolbar_height">56dp</dimen>
-    <dimen name="content_padding_horizontal">16dp</dimen>
-    <dimen name="content_padding_vertical">20dp</dimen>
+    <dimen name="content_padding_horizontal">12dp</dimen>
+    <dimen name="content_padding_vertical">16dp</dimen>
     <dimen name="card_corner_radius">8dp</dimen>
     <dimen name="item_margin">8dp</dimen>
-    <dimen name="fab_margin">16dp</dimen>
+    <dimen name="fab_margin">12dp</dimen>
     <dimen name="quick_input_bar_height">48dp</dimen>
 </resources>
