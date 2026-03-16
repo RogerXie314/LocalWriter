@@ -21,11 +21,6 @@
 *.keystore
 *.p12
 
-# Build logs
-build_log.txt
-build_result.txt
-build_full_result.txt
-build_v2.txt
-build_review.txt
-build_review2.txt
+# Build logs and temporary debug scripts (auto-generated during CI/local debugging)
+build_*.txt
 do_build*.bat
