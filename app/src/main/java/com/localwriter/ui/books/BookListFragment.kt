@@ -339,7 +339,9 @@ class BookListFragment : Fragment() {
     }
 
     private fun doExport(book: Book, format: BookExporter.ExportFormat, uri: android.net.Uri) {
-        val bookRepo = (requireActivity().application as LocalWriterApp).bookRepository
+        val app      = requireActivity().application as LocalWriterApp
+        val bookRepo = app.bookRepository
+        val db       = app.database   // 在主线程提前缓存，避免在 withContext(IO) 内调用 requireActivity()
         val ctx      = requireContext().applicationContext
 
         lifecycleScope.launch {
@@ -351,7 +353,6 @@ class BookListFragment : Fragment() {
                     )
                     val targetBook = books.firstOrNull { it.id == book.id } ?: book
                     // 通过 DAO 获取所有章节内容
-                    val db = (requireActivity().application as LocalWriterApp).database
                     val volumes = db.volumeDao().getAllByBook(book.id)
                     val allChapters = mutableListOf<com.localwriter.data.db.entity.Chapter>()
                     volumes.forEach { vol ->
@@ -466,10 +467,11 @@ class BookListFragment : Fragment() {
     private fun saveImportedBook(result: com.localwriter.utils.io.ImportResult) {
         val ctx    = requireContext()
         val userId = SessionManager.getUserId(ctx)
+        // 在主线程提前缓存，避免协程启动后 Fragment 已离开导致 requireActivity() 抛异常
+        val app    = requireActivity().application as LocalWriterApp
 
         lifecycleScope.launch {
             try {
-                val app      = requireActivity().application as LocalWriterApp
                 val bookRepo = app.bookRepository
                 val bookId   = withContext(Dispatchers.IO) {
                     bookRepo.importBook(userId, result)

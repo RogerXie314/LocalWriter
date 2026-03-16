@@ -67,9 +67,13 @@ interface ChapterDao {
     @Query("UPDATE chapters SET status = 'DRAFT', deletedAt = NULL WHERE id = :chapterId")
     suspend fun restore(chapterId: Long)
 
-    /** 获取回收站章节 */
+    /** 观察回收站章节（LiveData，持续更新）*/
     @Query("SELECT * FROM chapters WHERE bookId = :bookId AND status = 'DELETED' ORDER BY deletedAt DESC")
     fun observeDeletedByBook(bookId: Long): LiveData<List<Chapter>>
+
+    /** 一次性获取回收站章节快照（suspend，用于弹窗等单次查询场景）*/
+    @Query("SELECT * FROM chapters WHERE bookId = :bookId AND status = 'DELETED' ORDER BY deletedAt DESC")
+    suspend fun getDeletedByBook(bookId: Long): List<Chapter>
 
     /** 清理超过 30 天的回收站章节 */
     @Query("DELETE FROM chapters WHERE status = 'DELETED' AND deletedAt < :threshold")

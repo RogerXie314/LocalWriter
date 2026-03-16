@@ -278,9 +278,11 @@ class ChapterListFragment : Fragment() {
 
     private fun showSearchResults(query: String) {
         val ctx = requireContext()
+        // 在主线程（挂起前）缓存 db 引用，避免在 withContext(IO) 内调用 requireActivity() 
+        // 引发 "Fragment not attached" 的 IllegalStateException
+        val db = (requireActivity().application as LocalWriterApp).database
         lifecycleScope.launch {
             val results: List<ChapterPreview> = withContext(Dispatchers.IO) {
-                val db = (requireActivity().application as LocalWriterApp).database
                 db.chapterDao().search(bookId, query)
             }
             if (results.isEmpty()) {
@@ -312,13 +314,17 @@ class ChapterListFragment : Fragment() {
     private fun showTrashDialog() {
         val ctx = requireContext()
         val chapterRepo = (requireActivity().application as LocalWriterApp).chapterRepository
-        chapterRepo.observeDeletedChapters(bookId).observe(viewLifecycleOwner) { deletedList ->
-            // 只取一次快照即重置观察（防止多次弹出对话框）
-            chapterRepo.observeDeletedChapters(bookId).removeObservers(viewLifecycleOwner)
+        // 使用 suspend 一次性查询，避免每次调用 observeDeletedChapters() 都创建新 LiveData 实例
+        // 导致 removeObservers 作用于错误实例、观察者无限积累的崩溃问题
+        lifecycleScope.launch {
+            val deletedList = withContext(Dispatchers.IO) {
+                chapterRepo.getDeletedChapters(bookId)
+            }
+            if (!isAdded) return@launch  // Fragment 已离开，放弃操作
 
-            if (deletedList.isNullOrEmpty()) {
+            if (deletedList.isEmpty()) {
                 Toast.makeText(ctx, "回收站为空", Toast.LENGTH_SHORT).show()
-                return@observe
+                return@launch
             }
             val titles = deletedList.map { "《${it.title}》" }.toTypedArray()
             AlertDialog.Builder(ctx)

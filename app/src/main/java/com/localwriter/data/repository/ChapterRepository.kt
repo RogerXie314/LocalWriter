@@ -87,6 +87,10 @@ class ChapterRepository(
     fun observeDeletedChapters(bookId: Long): LiveData<List<Chapter>> =
         chapterDao.observeDeletedByBook(bookId)
 
+    /** 一次性获取回收站章节快照（用于弹窗等单次查询，避免 LiveData 观察者累积） */
+    suspend fun getDeletedChapters(bookId: Long): List<Chapter> =
+        chapterDao.getDeletedByBook(bookId)
+
     suspend fun purgeOldDeletedChapters() {
         val threshold = System.currentTimeMillis() - 30L * 24 * 3600 * 1000
         chapterDao.purgeOldDeleted(threshold)
