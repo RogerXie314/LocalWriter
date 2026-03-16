@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 夜间模式颜色 -->
+    <color name="night_primary">#BB86FC</color>
+    <color name="night_primary_container">#3700B3</color>
+    <color name="night_on_primary_container">#EADDFF</color>
+    <color name="night_surface">#1C1B1F</color>
+    <color name="night_on_surface">#E6E1E5</color>
+    <color name="night_surface_variant">#49454F</color>
+    <color name="night_background">#121212</color>
+</resources>

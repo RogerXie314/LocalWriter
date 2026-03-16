@@ -1,0 +1,265 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 设置界面 -->
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        android:background="@color/primary"
+        app:titleTextColor="@color/white"/>
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <!-- 效果预览卡片 -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardPreview"
+                android:layout_width="match_parent"
+                android:layout_height="80dp"
+                app:cardCornerRadius="8dp"
+                android:layout_marginBottom="16dp">
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:text="　　这是正文预览效果，你可以在此看到字体、字号、背景的实际显示效果。"
+                    android:id="@+id/tvPreviewText"
+                    android:padding="12dp"
+                    android:gravity="center_vertical"
+                    android:textSize="15sp"/>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- 分组：外观 -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="外观设置"
+                android:textStyle="bold"
+                android:textSize="14sp"
+                android:textColor="@color/primary"
+                android:paddingVertical="8dp"/>
+
+            <!-- 字号 -->
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="horizontal" android:gravity="center_vertical">
+                <TextView android:layout_width="80dp" android:layout_height="wrap_content"
+                    android:text="字号" android:textSize="14sp"/>
+                <SeekBar android:id="@+id/seekBarFontSize"
+                    android:layout_width="0dp" android:layout_height="wrap_content"
+                    android:layout_weight="1" android:min="10" android:max="28"/>
+                <TextView android:id="@+id/tvFontSizeValue"
+                    android:layout_width="48dp" android:layout_height="wrap_content"
+                    android:text="16sp" android:textSize="12sp" android:gravity="end"/>
+            </LinearLayout>
+
+            <!-- 字体 -->
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="horizontal" android:gravity="center_vertical"
+                android:layout_marginTop="8dp">
+                <TextView android:layout_width="80dp" android:layout_height="wrap_content"
+                    android:text="字体" android:textSize="14sp"/>
+                <com.google.android.material.chip.ChipGroup
+                    android:id="@+id/chipGroupFonts"
+                    android:layout_width="0dp" android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    app:singleSelection="true"/>
+            </LinearLayout>
+
+            <!-- 背景 -->
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:text="背景风格" android:textSize="14sp"
+                android:layout_marginTop="8dp" android:layout_marginBottom="4dp"/>
+            <com.google.android.material.chip.ChipGroup
+                android:id="@+id/chipGroupBg"
+                android:layout_width="match_parent" android:layout_height="wrap_content"/>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnPickBgImage"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="使用自定义图片背景"
+                android:layout_marginTop="8dp"
+                style="@style/Widget.Material3.Button.OutlinedButton"/>
+
+            <!-- 字色 -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnTextColor"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="选择正文字色"
+                android:layout_marginTop="8dp"
+                style="@style/Widget.Material3.Button.TonalButton"/>
+
+            <!-- 分组：编辑习惯 -->
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:text="编辑习惯" android:textStyle="bold" android:textSize="14sp"
+                android:textColor="@color/primary" android:paddingTop="16dp" android:paddingBottom="8dp"/>
+
+            <!-- 字数统计 -->
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="horizontal" android:gravity="center_vertical">
+                <TextView android:layout_width="0dp" android:layout_height="wrap_content"
+                    android:layout_weight="1" android:text="显示字数统计" android:textSize="14sp"/>
+                <com.google.android.material.switchmaterial.SwitchMaterial
+                    android:id="@+id/switchShowWordCount" android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+            </LinearLayout>
+
+            <!-- 自动保存 -->
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="horizontal" android:gravity="center_vertical"
+                android:layout_marginTop="8dp">
+                <TextView android:layout_width="80dp" android:layout_height="wrap_content"
+                    android:text="自动保存" android:textSize="14sp"/>
+                <SeekBar android:id="@+id/seekBarAutoSave"
+                    android:layout_width="0dp" android:layout_height="wrap_content"
+                    android:layout_weight="1" android:max="30"/>
+                <TextView android:id="@+id/tvAutoSaveValue"
+                    android:layout_width="72dp" android:layout_height="wrap_content"
+                    android:text="30秒" android:textSize="12sp" android:gravity="end"/>
+            </LinearLayout>
+
+            <!-- 分组：安全 -->
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:text="安全设置" android:textStyle="bold" android:textSize="14sp"
+                android:textColor="@color/primary" android:paddingTop="16dp" android:paddingBottom="8dp"/>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnChangePassword"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:text="修改密码" android:layout_marginBottom="8dp"
+                style="@style/Widget.Material3.Button.OutlinedButton"/>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnSetGesture"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:text="设置手势密码" android:layout_marginBottom="8dp"
+                style="@style/Widget.Material3.Button.OutlinedButton"/>
+
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="horizontal" android:gravity="center_vertical">
+                <TextView android:layout_width="0dp" android:layout_height="wrap_content"
+                    android:layout_weight="1" android:text="生物识别解锁（面容/指纹）" android:textSize="14sp"/>
+                <com.google.android.material.switchmaterial.SwitchMaterial
+                    android:id="@+id/switchBiometric" android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+            </LinearLayout>
+
+            <!-- 分组：关于 -->
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:text="关于" android:textStyle="bold" android:textSize="14sp"
+                android:textColor="@color/primary" android:paddingTop="16dp" android:paddingBottom="8dp"/>
+
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:cardCornerRadius="8dp"
+                android:layout_marginBottom="8dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="8dp">
+                        <ImageView
+                            android:layout_width="40dp"
+                            android:layout_height="40dp"
+                            android:src="@mipmap/ic_launcher"
+                            android:layout_marginEnd="12dp"
+                            android:contentDescription="应用图标"/>
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="LocalWriter"
+                                android:textSize="16sp"
+                                android:textStyle="bold"
+                                android:textColor="@color/on_surface"/>
+                            <TextView
+                                android:id="@+id/tvAboutVersion"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="版本 1.0.0"
+                                android:textSize="13sp"
+                                android:textColor="@color/text_secondary"/>
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:background="?android:attr/listDivider"
+                        android:alpha="0.5"
+                        android:layout_marginVertical="8dp"/>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="作者"
+                            android:textSize="13sp"
+                            android:textColor="@color/text_secondary"/>
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Roger_xie"
+                            android:textSize="13sp"
+                            android:textColor="@color/on_surface"
+                            android:textStyle="bold"/>
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:layout_marginTop="6dp">
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="隐私政策"
+                            android:textSize="13sp"
+                            android:textColor="@color/text_secondary"/>
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="数据完全展存在本地设备，不上传任何服务器"
+                            android:textSize="13sp"
+                            android:textColor="@color/on_surface"/>
+                    </LinearLayout>
+
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <View android:layout_width="match_parent" android:layout_height="32dp"/>
+
+        </LinearLayout>
+    </ScrollView>
+</LinearLayout>

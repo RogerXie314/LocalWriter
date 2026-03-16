@@ -1,0 +1,135 @@
+plugins {
+    id 'com.android.application'
+    id 'org.jetbrains.kotlin.android'
+    id 'com.google.devtools.ksp'
+    id 'kotlin-parcelize'
+}
+
+android {
+    namespace 'com.localwriter'
+    compileSdk 36
+    buildToolsVersion "36.1.0"
+
+    defaultConfig {
+        applicationId "com.localwriter"
+        minSdk 26
+        targetSdk 36
+        versionCode 1
+        versionName "1.0.0"
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+        debug {
+            minifyEnabled false
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    kotlinOptions {
+        jvmTarget = '17'
+    }
+
+    buildFeatures {
+        viewBinding true
+    }
+
+    // Room exportSchema 输出目录（version control 友好）
+    ksp {
+        arg("room.schemaLocation", "$projectDir/schemas")
+    }
+
+    packagingOptions {
+        resources {
+            excludes += '/META-INF/{AL2.0,LGPL2.1}'
+            excludes += 'META-INF/DEPENDENCIES'
+        }
+    }
+}
+
+configurations.configureEach {
+    resolutionStrategy {
+        force 'net.sf.kxml:kxml2:2.3.0'
+    }
+    exclude group: 'xmlpull', module: 'xmlpull'
+    exclude group: 'xpp3', module: 'xpp3'
+}
+
+dependencies {
+    // AndroidX Core
+    implementation 'androidx.core:core-ktx:1.12.0'
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+    implementation 'com.google.android.material:material:1.11.0'
+    implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
+    implementation 'androidx.activity:activity-ktx:1.8.2'
+    implementation 'androidx.fragment:fragment-ktx:1.6.2'
+
+    // Navigation Component
+    implementation 'androidx.navigation:navigation-fragment-ktx:2.7.6'
+    implementation 'androidx.navigation:navigation-ui-ktx:2.7.6'
+
+    // ViewModel + LiveData
+    implementation 'androidx.lifecycle:lifecycle-viewmodel-ktx:2.7.0'
+    implementation 'androidx.lifecycle:lifecycle-livedata-ktx:2.7.0'
+    implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.7.0'
+
+    // Room 数据库
+    implementation 'androidx.room:room-runtime:2.6.1'
+    implementation 'androidx.room:room-ktx:2.6.1'
+    ksp 'androidx.room:room-compiler:2.6.1'
+
+    // 安全加密 (本地密码存储)
+    implementation 'androidx.security:security-crypto:1.1.0-alpha06'
+
+    // 生物识别 (面容ID/指纹)
+    implementation 'androidx.biometric:biometric:1.2.0-alpha05'
+
+    // 协程
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3'
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3'
+
+    // 文件处理 - epub
+    implementation 'org.jsoup:jsoup:1.17.2'
+    implementation 'nl.siegmann.epublib:epublib-core:3.1'
+
+    // PDF生成
+    implementation 'com.itextpdf:itextpdf:5.5.13.3'
+
+    // Apache POI - DOC/DOCX（已改用原生 ZIP/XML 解析，不再需要）
+    // implementation('org.apache.poi:poi:5.2.5') { ... }
+    // implementation('org.apache.poi:poi-scratchpad:5.2.5') { ... }
+
+    // 字符编码检测 (解决乱码)
+    implementation 'com.github.albfernandez:juniversalchardet:2.4.0'
+
+    // 颜色选择器
+    implementation 'com.github.skydoves:colorpickerview:2.3.0'
+
+    // 手势密码 (不依赖第三方库，已在 GestureLoginFragment 中自行实现)
+    // implementation 'com.github.ihsanbal:GestureLockView:1.0.3'
+
+    // RecyclerView
+    implementation 'androidx.recyclerview:recyclerview:1.3.2'
+
+    // ViewPager2
+    implementation 'androidx.viewpager2:viewpager2:1.0.0'
+
+    // 图片选择 (背景图)
+    implementation 'androidx.activity:activity-ktx:1.8.2'
+
+    // 偏好设置
+    implementation 'androidx.preference:preference-ktx:1.2.1'
+
+    // 测试
+    testImplementation 'junit:junit:4.13.2'
+    androidTestImplementation 'androidx.test.ext:junit:1.1.5'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
+}

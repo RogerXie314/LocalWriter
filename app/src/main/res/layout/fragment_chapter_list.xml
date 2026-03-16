@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 章节列表 Fragment -->
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        android:background="@color/primary"
+        app:navigationIcon="@drawable/ic_arrow_back"
+        app:navigationContentDescription="返回书籍列表"
+        app:menu="@menu/menu_chapter_list"/>
+
+    <!-- 章节列表与空状态叠层，空状态垂直居中 -->
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rvChapters"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"/>
+
+        <TextView
+            android:id="@+id/tvEmpty"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:text="暂无章节\n点击卷标题右侧 + 新建第一章"
+            android:gravity="center"
+            android:lineSpacingMultiplier="1.6"
+            android:padding="24dp"
+            android:textColor="@color/text_secondary"
+            android:visibility="gone"/>
+
+    </FrameLayout>
+
+</LinearLayout>

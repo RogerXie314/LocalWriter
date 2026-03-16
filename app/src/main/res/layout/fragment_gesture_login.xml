@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 手势密码 Fragment -->
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:padding="24dp">
+
+    <TextView
+        android:id="@+id/tvGestureHint"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="请绘制手势密码"
+        android:gravity="center"
+        android:textSize="16sp"
+        android:textColor="@color/on_surface"
+        android:layout_marginBottom="24dp"/>
+
+    <!-- 手势宫格（实际使用第三方 GestureLockView）
+         在真实集成中，将此处替换为 GestureLockView
+    -->
+    <FrameLayout
+        android:id="@+id/gestureViewContainer"
+        android:layout_width="240dp"
+        android:layout_height="240dp"
+        android:background="@drawable/bg_gesture_grid">
+        <!--
+        <com.github.ihsanbal.GestureLockView
+            android:id="@+id/gestureLockView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"/>
+        -->
+        <!-- 演示用占位按钮 -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnGestureDemo"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:text="模拟手势完成\n（开发时使用）"
+            android:textSize="12sp"
+            style="@style/Widget.Material3.Button.OutlinedButton"/>
+    </FrameLayout>
+
+    <TextView
+        android:id="@+id/tvSwitchToPassword"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="使用密码登录"
+        android:textColor="@color/primary"
+        android:padding="12dp"
+        android:layout_marginTop="16dp"/>
+
+</LinearLayout>

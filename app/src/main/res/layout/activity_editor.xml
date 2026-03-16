@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  编辑器界面
+  - 顶部 Toolbar：章节标题 + 字数 + 保存状态
+  - 中间：可滚动的全屏文本编辑区
+  - 底部：快捷输入工具栏（标点/句式/撤销重做）
+-->
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <!-- 顶部工具栏 -->
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        android:background="@color/primary"
+        app:titleTextColor="@color/white">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="end"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingEnd="8dp">
+
+            <TextView
+                android:id="@+id/tvSaveStatus"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="#DDFFFF"
+                android:textSize="12sp"
+                android:paddingEnd="12dp"/>
+
+            <TextView
+                android:id="@+id/tvWordCount"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="0字"
+                android:textColor="@color/white"
+                android:textSize="13sp"
+                android:background="@drawable/bg_word_count"
+                android:paddingHorizontal="8dp"
+                android:paddingVertical="2dp"/>
+
+        </LinearLayout>
+    </androidx.appcompat.widget.Toolbar>
+
+    <!-- 编辑区 -->
+    <ScrollView
+        android:id="@+id/scrollContent"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:fillViewport="true">
+
+        <EditText
+            android:id="@+id/etContent"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="100dp"
+            android:padding="@dimen/content_padding_horizontal"
+            android:textSize="16sp"
+            android:lineSpacingMultiplier="1.8"
+            android:textColor="@color/on_surface"
+            android:background="@null"
+            android:gravity="top|start"
+            android:inputType="textMultiLine|textCapSentences"
+            android:hint="开始你的创作…"
+            android:scrollbars="none"/>
+
+    </ScrollView>
+
+    <!-- 底部快捷输入工具栏 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/quick_input_bar_height"
+        android:orientation="horizontal"
+        android:background="@color/surface"
+        android:elevation="4dp"
+        android:paddingHorizontal="4dp">
+
+        <!-- 撤销 -->
+        <ImageButton
+            android:id="@+id/btnUndo"
+            android:layout_width="40dp"
+            android:layout_height="match_parent"
+            android:src="@drawable/ic_undo"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="撤销"/>
+
+        <!-- 重做 -->
+        <ImageButton
+            android:id="@+id/btnRedo"
+            android:layout_width="40dp"
+            android:layout_height="match_parent"
+            android:src="@drawable/ic_redo"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="重做"/>
+
+        <!-- 分割线 -->
+        <View
+            android:layout_width="1dp"
+            android:layout_height="match_parent"
+            android:background="@color/divider"
+            android:layout_marginVertical="8dp"/>
+
+        <!-- 标点快捷输入（横向滚动）-->
+        <HorizontalScrollView
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:scrollbars="none">
+
+            <com.google.android.material.chip.ChipGroup
+                android:id="@+id/chipGroupPunctuation"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                app:singleLine="true"
+                app:chipSpacingHorizontal="4dp"
+                android:paddingHorizontal="4dp"/>
+        </HorizontalScrollView>
+
+        <!-- 常用句式 -->
+        <ImageButton
+            android:id="@+id/btnQuickPhrase"
+            android:layout_width="40dp"
+            android:layout_height="match_parent"
+            android:src="@drawable/ic_quick_text"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="常用句式"/>
+
+    </LinearLayout>
+
+</LinearLayout>

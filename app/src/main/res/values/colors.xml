@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="primary">#5D4037</color>
+    <color name="primary_dark">#4E342E</color>
+    <color name="accent">#FF8F00</color>
+    <color name="white">#FFFFFF</color>
+    <color name="background">#FFF8F5</color>
+    <color name="auth_bg">#F5E6D3</color>
+    <color name="surface">#FFFFFF</color>
+    <color name="on_surface">#333333</color>
+    <color name="text_secondary">#757575</color>
+    <color name="divider">#E0E0E0</color>
+    <color name="nav_panel_bg">#FFF3E0</color>
+    <!-- 状态标签色 -->
+    <color name="status_ongoing">#2E7D32</color>
+    <color name="status_finished">#1565C0</color>
+    <color name="status_paused">#E65100</color>
+</resources>

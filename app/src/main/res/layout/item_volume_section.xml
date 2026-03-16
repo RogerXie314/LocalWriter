@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 卷章节区块头部 -->
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:background="#FFF9EE"
+    android:paddingHorizontal="12dp"
+    android:paddingVertical="6dp"
+    android:gravity="center_vertical">
+
+    <TextView
+        android:id="@+id/tvVolumeTitle"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:textSize="13sp"
+        android:textStyle="bold"
+        android:textColor="@color/primary"/>
+
+    <!-- 添加章节 -->
+    <ImageButton
+        android:id="@+id/btnAddChapter"
+        android:layout_width="28dp"
+        android:layout_height="28dp"
+        android:src="@drawable/ic_add"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:tint="@color/primary"
+        android:contentDescription="添加章节"/>
+
+    <!-- 卷菜单 -->
+    <ImageButton
+        android:id="@+id/btnVolumeMenu"
+        android:layout_width="28dp"
+        android:layout_height="28dp"
+        android:src="@drawable/ic_more_vert"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:tint="@color/primary"
+        android:contentDescription="卷菜单"/>
+
+</LinearLayout>

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <item
+        android:id="@+id/action_font_size_dec"
+        android:title="缩小字体"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/action_font_size_inc"
+        android:title="放大字体"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/action_chapter_list"
+        android:title="章节目录"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/action_edit_chapter"
+        android:title="编辑本章"
+        app:showAsAction="never" />
+
+</menu>
