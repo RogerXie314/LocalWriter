@@ -5,6 +5,22 @@ plugins {
     id 'kotlin-parcelize'
 }
 
+// ── 自动从 Git 获取 versionCode（commit 总次数）─────────────────────────
+def gitCommitCount() {
+    try {
+        def proc = 'git rev-list --count HEAD'.execute(new String[0], rootDir)
+        proc.waitFor()
+        return proc.text.trim().toInteger()
+    } catch (ignored) {
+        return 1
+    }
+}
+
+// 构建日期（格式 yyyy-MM-dd）
+def buildDate() {
+    return new Date().format('yyyy-MM-dd')
+}
+
 android {
     namespace 'com.localwriter'
     compileSdk 36
@@ -14,7 +30,7 @@ android {
         applicationId "com.localwriter"
         minSdk 26
         targetSdk 36
-        versionCode 2
+        versionCode gitCommitCount()
         versionName "1.1.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
 
@@ -23,7 +39,7 @@ android {
         buildConfigField "String", "APP_DESCRIPTION", '"本地写作助手 - 专注隐私的离线写作工具"'
         buildConfigField "String", "AUTHOR",          '"解若耿"'
         buildConfigField "String", "AUTHOR_GITHUB",   '"https://github.com/RogerXie314/LocalWriter"'
-        buildConfigField "String", "BUILD_DATE",      '"2026-03-17"'
+        buildConfigField "String", "BUILD_DATE",      '"' + buildDate() + '"'
     }
 
     buildTypes {
