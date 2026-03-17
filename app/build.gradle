@@ -46,7 +46,7 @@ android {
         release {
             minifyEnabled true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-            // release 包命名：LocalWriter-v1.1.0.apk
+            // release 包命名：LocalWriter-v{versionName}.apk
             android.applicationVariants.all { variant ->
                 if (variant.buildType.name == "release") {
                     variant.outputs.all {
@@ -57,7 +57,7 @@ android {
         }
         debug {
             minifyEnabled false
-            // debug 包命名：LocalWriter-v1.1.0-dev.apk（去掉默认 -debug 字样）
+            // debug 包命名：LocalWriter-v{versionName}-dev.apk（去掉默认 -debug 字样）
             android.applicationVariants.all { variant ->
                 if (variant.buildType.name == "debug") {
                     variant.outputs.all {
