@@ -20,10 +20,15 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.core.view.updateLayoutParams
 import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.color.MaterialColors
 import com.localwriter.LocalWriterApp
 import com.localwriter.R
 import com.localwriter.databinding.ActivityReaderBinding
+import com.localwriter.databinding.ItemTocChapterBinding
+import com.localwriter.databinding.LayoutTocBottomSheetBinding
 import com.localwriter.ui.auth.AuthActivity
 import com.localwriter.ui.editor.EditorActivity
 import com.localwriter.utils.SessionManager
@@ -616,19 +621,90 @@ class ReaderActivity : AppCompatActivity() {
 
     private fun showChapterListDialog() {
         if (allChapterIds.isEmpty()) return
-        val titlesArray = chapterTitles.toTypedArray()
-        AlertDialog.Builder(this)
-            .setTitle("章节目录")
-            .setSingleChoiceItems(titlesArray, currentIndex) { dialog, which ->
-                dialog.dismiss()
-                if (which != currentIndex) {
-                    saveScrollPosition()
-                    loadChapter(allChapterIds[which])
-                    binding.scrollView.scrollTo(0, 0)
-                }
+
+        val sheetBinding = LayoutTocBottomSheetBinding.inflate(layoutInflater)
+        val sheet = BottomSheetDialog(this)
+        sheet.setContentView(sheetBinding.root)
+        // 透明背景使圆角生效
+        sheet.window?.findViewById<android.view.View>(
+            com.google.android.material.R.id.design_bottom_sheet
+        )?.setBackgroundResource(android.R.color.transparent)
+
+        // 设置书名
+        lifecycleScope.launch {
+            val db = (application as LocalWriterApp).database
+            val book = withContext(Dispatchers.IO) { db.bookDao().findById(bookId) }
+            sheetBinding.tvTocBookTitle.text = book?.title ?: ""
+        }
+
+        // 章节统计
+        sheetBinding.tvTocStats.text = "共 ${allChapterIds.size} 章"
+
+        // 是否倒序
+        var isReversed = false
+        val displayIds    = allChapterIds.toMutableList()
+        val displayTitles = chapterTitles.toMutableList()
+
+        // 途径送给 adapter：点击切章
+        val adapter = TocAdapter(displayTitles, currentIndex) { position ->
+            val realIdx = if (isReversed) allChapterIds.size - 1 - position else position
+            sheet.dismiss()
+            if (realIdx != currentIndex) {
+                saveScrollPosition()
+                loadChapter(allChapterIds[realIdx])
+                binding.scrollView.scrollTo(0, 0)
             }
-            .setNegativeButton("关闭", null)
-            .show()
+        }
+        sheetBinding.rvTocChapters.layoutManager = LinearLayoutManager(this)
+        sheetBinding.rvTocChapters.adapter = adapter
+
+        // 滚动到当前章节
+        val scrollTo = if (isReversed) allChapterIds.size - 1 - currentIndex else currentIndex
+        sheetBinding.rvTocChapters.scrollToPosition(scrollTo.coerceAtLeast(0))
+
+        // 正序 / 倒序切换
+        sheetBinding.tvTocSortOrder.setOnClickListener {
+            isReversed = !isReversed
+            sheetBinding.tvTocSortOrder.text = if (isReversed) "倒序" else "正序"
+            displayIds.reverse()
+            displayTitles.reverse()
+            adapter.notifyDataSetChanged()
+            val newScroll = if (isReversed) allChapterIds.size - 1 - currentIndex else currentIndex
+            sheetBinding.rvTocChapters.scrollToPosition(newScroll.coerceAtLeast(0))
+        }
+
+        sheet.show()
+    }
+
+    /** 目录列表 Adapter */
+    private inner class TocAdapter(
+        private val titles: List<String>,
+        private val activeIndex: Int,
+        private val onItemClick: (Int) -> Unit
+    ) : RecyclerView.Adapter<TocAdapter.VH>() {
+
+        inner class VH(val b: ItemTocChapterBinding) : RecyclerView.ViewHolder(b.root)
+
+        override fun onCreateViewHolder(parent: android.view.ViewGroup, viewType: Int): VH {
+            val b = ItemTocChapterBinding.inflate(layoutInflater, parent, false)
+            return VH(b)
+        }
+
+        override fun getItemCount() = titles.size
+
+        override fun onBindViewHolder(holder: VH, position: Int) {
+            holder.b.tvTocChapterTitle.text = titles[position]
+            val isActive = position == activeIndex
+            val activeColor = MaterialColors.getColor(
+                holder.itemView, com.google.android.material.R.attr.colorPrimary)
+            holder.b.tvTocChapterTitle.setTextColor(
+                if (isActive) activeColor else 0xFF1A1A1A.toInt())
+            holder.b.tvTocChapterTitle.textSize = if (isActive) 15.5f else 15f
+            // 当前章节圆点高亮
+            val dotDrawable = holder.b.vChapterDot.background as? android.graphics.drawable.GradientDrawable
+            dotDrawable?.setColor(if (isActive) activeColor else 0xFFCCCCCC.toInt())
+            holder.itemView.setOnClickListener { onItemClick(position) }
+        }
     }
 
     private fun openEditor() {

@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="@drawable/shape_bottom_sheet_bg">
+
+        <!-- 顶部拖拽把手 -->
+        <View
+            android:layout_width="36dp"
+            android:layout_height="4dp"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="10dp"
+            android:layout_marginBottom="6dp"
+            android:background="#33000000"
+            android:backgroundTint="#CCCCCC" />
+
+        <!-- 书名行 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingHorizontal="20dp">
+
+            <TextView
+                android:id="@+id/tvTocBookTitle"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="#1A1A1A"
+                android:maxLines="1"
+                android:ellipsize="end"
+                android:text="书名" />
+
+            <ImageView
+                android:layout_width="18dp"
+                android:layout_height="18dp"
+                android:src="@drawable/ic_arrow_forward"
+                android:tint="#999999"
+                android:contentDescription="详情" />
+        </LinearLayout>
+
+        <!-- 分段标签栏 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="44dp"
+            android:orientation="horizontal"
+            android:paddingHorizontal="16dp"
+            android:paddingVertical="6dp">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnTocTab"
+                style="@style/Widget.Material3.Button"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:text="目录"
+                android:textSize="14sp"
+                android:padding="0dp"
+                app:cornerRadius="20dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnNotesTab"
+                style="@style/Widget.Material3.Button.OutlinedButton"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:layout_marginStart="8dp"
+                android:text="笔记"
+                android:textSize="14sp"
+                android:padding="0dp"
+                android:enabled="false"
+                app:cornerRadius="20dp"
+                app:strokeColor="@android:color/transparent" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnBookmarkTab"
+                style="@style/Widget.Material3.Button.OutlinedButton"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:layout_marginStart="8dp"
+                android:text="书签"
+                android:textSize="14sp"
+                android:padding="0dp"
+                android:enabled="false"
+                app:cornerRadius="20dp"
+                app:strokeColor="@android:color/transparent" />
+        </LinearLayout>
+
+        <!-- 统计行 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="36dp"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingHorizontal="20dp">
+
+            <TextView
+                android:id="@+id/tvTocStats"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:textSize="12sp"
+                android:textColor="#999999"
+                android:text="共0章" />
+
+            <TextView
+                android:id="@+id/tvTocSortOrder"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="正序"
+                android:textSize="12sp"
+                android:textColor="#999999"
+                android:paddingHorizontal="8dp"
+                android:paddingVertical="4dp"
+                android:clickable="true"
+                android:focusable="true" />
+        </LinearLayout>
+
+        <!-- 分隔线 -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="0.5dp"
+            android:background="#EBEBEB" />
+
+        <!-- 章节列表 -->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rvTocChapters"
+            android:layout_width="match_parent"
+            android:layout_height="480dp"
+            android:overScrollMode="never"
+            android:clipToPadding="false"
+            android:paddingBottom="16dp" />
+
+    </LinearLayout>
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>
