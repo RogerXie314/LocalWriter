@@ -117,6 +117,9 @@ class EditorActivity : AppCompatActivity() {
             showQuickPhraseDialog()
         }
 
+        // 保存并返回
+        binding.btnEditorBack.setOnClickListener { saveAndExit() }
+
         // 撤销/重做
         binding.btnUndo.setOnClickListener { undoRedoHelper.undo() }
         binding.btnRedo.setOnClickListener { undoRedoHelper.redo() }

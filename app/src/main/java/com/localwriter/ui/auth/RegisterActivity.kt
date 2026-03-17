@@ -80,6 +80,24 @@ class RegisterActivity : AppCompatActivity() {
             }
         }
 
+        // 跳过登录：无密码模式
+        binding.btnSkipAuth.setOnClickListener {
+            lifecycleScope.launch {
+                val authRepo = (application as LocalWriterApp).authRepository
+                val username = "user_${System.currentTimeMillis()}"
+                val password = java.util.UUID.randomUUID().toString()
+                val userId = authRepo.register(username, password)
+                if (userId > 0) {
+                    SessionManager.saveUserId(this@RegisterActivity, userId)
+                    SessionManager.setNoPasswordMode(this@RegisterActivity, true)
+                    SessionManager.unlock(this@RegisterActivity)
+                    goToMain()
+                } else {
+                    Toast.makeText(this@RegisterActivity, "初始化失败，请重试", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+
         // 第二步：手势设置（跳过/确认）
         binding.btnSkipGesture.setOnClickListener { showStep(STEP_BIOMETRIC) }
         binding.btnConfirmGesture.setOnClickListener {

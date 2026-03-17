@@ -207,6 +207,14 @@ class SettingsActivity : AppCompatActivity() {
         binding.switchBiometric.setOnCheckedChangeListener { _, checked ->
             viewModel.enableBiometric(checked)
         }
+        // 无密码模式开关
+        binding.switchNoPassword.isChecked = SessionManager.isNoPasswordMode(this)
+        binding.switchNoPassword.setOnCheckedChangeListener { _, checked ->
+            SessionManager.setNoPasswordMode(this, checked)
+            val msg = if (checked) "已开启无密码模式，下次启动无需验证"
+                      else "已关闭无密码模式，请确保已设置密码"
+            toast(msg)
+        }
     }
 
     /** 设置后台自动锁定超时 Spinner */

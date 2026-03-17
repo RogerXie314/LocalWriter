@@ -171,6 +171,24 @@
                     android:minWidth="120dp"/>
             </LinearLayout>
 
+            <!-- 无密码模式 -->
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="horizontal" android:gravity="center_vertical"
+                android:layout_marginTop="12dp">
+                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
+                    android:layout_weight="1" android:orientation="vertical">
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="直接使用（无需密码）" android:textSize="14sp"/>
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="开启后启动应用无需登录验证" android:textSize="11sp"
+                        android:textColor="@color/text_secondary"/>
+                </LinearLayout>
+                <com.google.android.material.switchmaterial.SwitchMaterial
+                    android:id="@+id/switchNoPassword"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+            </LinearLayout>
+
             <!-- 分组：关于 -->
             <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
                 android:text="关于" android:textStyle="bold" android:textSize="14sp"

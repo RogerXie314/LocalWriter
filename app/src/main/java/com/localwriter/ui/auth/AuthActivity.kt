@@ -53,6 +53,15 @@ class AuthActivity : AppCompatActivity() {
 
                 is AuthViewModel.AuthState.NeedAuth -> {
                     showLoading(false)
+
+                    // 无密码模式：直接跳过验证
+                    if (SessionManager.isNoPasswordMode(this@AuthActivity)) {
+                        SessionManager.saveUserId(this@AuthActivity, state.user.id)
+                        SessionManager.unlock(this@AuthActivity)
+                        goToMain()
+                        return@observe
+                    }
+
                     val user = state.user
                     currentUserId = user.id   // 保存 userId 供手势切换使用
                     binding.tvUsername.text = "欢迎回来，${user.username}"

@@ -18,6 +18,8 @@ object SessionManager {
     private const val KEY_LOCK_TIMESTAMP = "session_lock_timestamp"
     /** 锁定超时分钟数，-1 = 从不自动锁定，0 = 立即锁定 */
     private const val KEY_LOCK_TIMEOUT_MINUTES = "lock_timeout_minutes"
+    /** 无密码模式：开启后启动无需任何验证 */
+    private const val KEY_NO_PASSWORD_MODE = "no_password_mode"
     private const val NO_USER = -1L
 
     /** 默认 5 分钟，用于首次安装时 */
@@ -39,6 +41,21 @@ object SessionManager {
     fun getLockTimeout(context: Context): Int {
         return SecurityUtils.getEncryptedPrefs(context)
             .getInt(KEY_LOCK_TIMEOUT_MINUTES, DEFAULT_LOCK_TIMEOUT_MINUTES)
+    }
+
+    // ─── 无密码模式 ──────────────────────────────────────────────────────────
+
+    /** 设置是否启用无密码直接使用模式 */
+    fun setNoPasswordMode(context: Context, enabled: Boolean) {
+        SecurityUtils.getEncryptedPrefs(context).edit()
+            .putBoolean(KEY_NO_PASSWORD_MODE, enabled)
+            .apply()
+    }
+
+    /** 是否处于无密码模式（启动无需验证） */
+    fun isNoPasswordMode(context: Context): Boolean {
+        return SecurityUtils.getEncryptedPrefs(context)
+            .getBoolean(KEY_NO_PASSWORD_MODE, false)
     }
 
     fun saveUserId(context: Context, userId: Long) {
@@ -85,6 +102,11 @@ object SessionManager {
      *   N = N 分钟宽限期
      */
     fun isLocked(context: Context): Boolean {
+        // 无密码模式：永不锁定
+        if (isNoPasswordMode(context)) {
+            unlock(context)
+            return false
+        }
         val prefs = SecurityUtils.getEncryptedPrefs(context)
         val locked = prefs.getBoolean(KEY_IS_LOCKED, false)
         if (!locked) return false
