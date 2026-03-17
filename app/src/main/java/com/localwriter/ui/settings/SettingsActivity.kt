@@ -13,6 +13,7 @@ import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
+import com.localwriter.BuildConfig
 import com.localwriter.LocalWriterApp
 import com.localwriter.R
 import com.localwriter.data.db.entity.UserSettings
@@ -314,14 +315,11 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun setupAboutSection() {
-        try {
-            val pInfo = packageManager.getPackageInfo(packageName, 0)
-            binding.tvAboutVersion.text = "版本 ${pInfo.versionName}"
-        } catch (_: Exception) {}
+        // 版本号从 BuildConfig 读取，与打包版本保持一致
+        binding.tvAboutVersion.text = "版本 ${BuildConfig.VERSION_NAME}"
 
         binding.llAboutRepo.setOnClickListener {
-            val intent = Intent(Intent.ACTION_VIEW,
-                Uri.parse("https://github.com/RogerXie314/LocalWriter"))
+            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(BuildConfig.AUTHOR_GITHUB))
             startActivity(intent)
         }
     }
