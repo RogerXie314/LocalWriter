@@ -7,14 +7,12 @@ import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import android.util.TypedValue
 import android.view.MenuItem
 import android.view.View
 import android.widget.SeekBar
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
@@ -76,8 +74,8 @@ class ReaderActivity : AppCompatActivity() {
     private val bookmarkHandler = Handler(Looper.getMainLooper())
     private val bookmarkRunnable = Runnable { saveBookmark() }
 
-    /** 翻页模式：0=滚动（默认），1=翻页（横向滑动切章） */
-    private var pageMode: Int = 0
+    /** 翻页模式：0=滚动，1=翻页（默认，左右点击区域翻页） */
+    private var pageMode: Int = 1
     private lateinit var flipGestureDetector: android.view.GestureDetector
 
     companion object {
@@ -90,6 +88,10 @@ class ReaderActivity : AppCompatActivity() {
         private const val KEY_SPACING      = "line_spacing"
         private const val KEY_NIGHT_MODE   = "night_mode"
         private const val KEY_BG_COLOR_IDX = "bg_color_idx"
+        private const val KEY_PAGE_MODE    = "page_mode"
+
+        /** 判断是否位于章节开头/结尾时允许的滚动容差（像素） */
+        private const val SCROLL_TOLERANCE = 8
 
         private val SPACINGS = floatArrayOf(1.2f, 1.55f, 1.85f, 2.2f)
 
@@ -138,13 +140,7 @@ class ReaderActivity : AppCompatActivity() {
         currentSpacingIdx = prefs.getInt(KEY_SPACING, 2)
         nightModeActive   = prefs.getBoolean(KEY_NIGHT_MODE, false)
         activeBgColorIdx  = prefs.getInt(KEY_BG_COLOR_IDX, -1)
-
-        // 章节导航
-        binding.btnPrevChapter.setOnClickListener { navigateChapter(-1) }
-        binding.btnNextChapter.setOnClickListener { navigateChapter(+1) }
-
-        // 点击正文切换沉浸模式（scrollView 的 tap 由 GestureDetector.onSingleTapUp 处理）
-        binding.tvContent.setOnClickListener  { toggleBars() }
+        pageMode          = prefs.getInt(KEY_PAGE_MODE, 1)
 
         // 书签
         binding.ivBookmarkIndicator.setOnClickListener { jumpToBookmark() }
@@ -180,6 +176,7 @@ class ReaderActivity : AppCompatActivity() {
             .putInt(KEY_SPACING, currentSpacingIdx)
             .putBoolean(KEY_NIGHT_MODE, nightModeActive)
             .putInt(KEY_BG_COLOR_IDX, activeBgColorIdx)
+            .putInt(KEY_PAGE_MODE, pageMode)
             .apply()
         saveScrollPosition()
         bookmarkHandler.removeCallbacks(bookmarkRunnable)
@@ -197,6 +194,35 @@ class ReaderActivity : AppCompatActivity() {
             R.id.action_edit_chapter -> { openEditor(); true }
             else -> super.onOptionsItemSelected(item)
         }
+    }
+
+    /**
+     * 拦截正文区域的触摸事件：
+     * - 在阅读内容区（非底部控制面板、非顶部工具栏）分派给手势检测器
+     * - 翻页模式下阻止 ScrollView 滚动
+     * - 滚动模式下允许 ScrollView 自由滚动
+     */
+    override fun dispatchTouchEvent(ev: android.view.MotionEvent): Boolean {
+        val sv = binding.scrollView
+        if (sv.isShown) {
+            val svRect = android.graphics.Rect()
+            sv.getGlobalVisibleRect(svRect)
+            val inContent = svRect.contains(ev.rawX.toInt(), ev.rawY.toInt())
+
+            // 当底部控制面板可见时，不拦截落在面板区域的触摸
+            val inPanel = barsVisible && binding.bottomControlOverlay.isShown && run {
+                val panelRect = android.graphics.Rect()
+                binding.bottomControlOverlay.getGlobalVisibleRect(panelRect)
+                panelRect.contains(ev.rawX.toInt(), ev.rawY.toInt())
+            }
+
+            if (inContent && !inPanel) {
+                val gestureHandled = flipGestureDetector.onTouchEvent(ev)
+                if (gestureHandled) return true   // 手势已处理（点击/滑动），阻止子 View 重复处理
+                if (pageMode == 1) return true    // 翻页模式：阻止 ScrollView 滚动
+            }
+        }
+        return super.dispatchTouchEvent(ev)
     }
 
     // ─────────────────── 底部控制面板 ───────────────────
@@ -271,14 +297,22 @@ class ReaderActivity : AppCompatActivity() {
         binding.btnPageFlip.setOnClickListener   { setPageMode(1) }
         updatePageModeButtons()
 
-        // 翻页手势检测（翻页模式下横向滑动切章）
+        // 手势检测：左右点击区域翻页，中间点击呼出/隐藏工具栏
         flipGestureDetector = android.view.GestureDetector(
             this,
             object : android.view.GestureDetector.SimpleOnGestureListener() {
                 private val SWIPE_MIN_DISTANCE = 80
-                private val SWIPE_MIN_VELOCITY = 100
+                // 提高滑动速度阈值，避免将慢速划动误判为章节切换
+                private val SWIPE_MIN_VELOCITY = 200
+                override fun onDown(e: android.view.MotionEvent): Boolean = true
                 override fun onSingleTapUp(e: android.view.MotionEvent): Boolean {
-                    toggleBars()
+                    val width = binding.scrollView.width.toFloat()
+                    val x = e.x
+                    when {
+                        x < width / 3f  -> navigatePage(-1)   // 左区：向前翻页
+                        x > width * 2f / 3f -> navigatePage(1) // 右区：向后翻页
+                        else            -> toggleBars()         // 中间区：呼出/隐藏工具栏
+                    }
                     return true
                 }
                 override fun onFling(
@@ -287,7 +321,7 @@ class ReaderActivity : AppCompatActivity() {
                     velocityX: Float,
                     velocityY: Float
                 ): Boolean {
-                    if (pageMode != 1 || e1 == null) return false
+                    if (e1 == null) return false
                     val dx = e2.x - e1.x
                     val dy = e2.y - e1.y
                     if (Math.abs(dx) > Math.abs(dy) &&
@@ -300,11 +334,6 @@ class ReaderActivity : AppCompatActivity() {
                 }
             }
         )
-        // 将手势检测附加到 scrollView 的触摸事件
-        binding.scrollView.setOnTouchListener { v, event ->
-            val consumed = flipGestureDetector.onTouchEvent(event)
-            if (!consumed) v.onTouchEvent(event) else true
-        }
 
         // 初始化显示状态
         updateSpacingButtonStates()
@@ -443,11 +472,6 @@ class ReaderActivity : AppCompatActivity() {
 
     private fun setPageMode(mode: Int) {
         pageMode = mode
-        // 滚动模式恢复 ScrollView 的正常滚动（移除 touch 拦截让默认处理）
-        if (mode == 0) {
-            binding.scrollView.setOnTouchListener(null)
-            binding.scrollView.setOnClickListener { toggleBars() }
-        }
         updatePageModeButtons()
     }
 
@@ -558,8 +582,6 @@ class ReaderActivity : AppCompatActivity() {
 
             val total = allChapterIds.size
             binding.tvChapterProgress.text = "${currentIndex + 1} / $total 章"
-            binding.btnPrevChapter.isEnabled = currentIndex > 0
-            binding.btnNextChapter.isEnabled = currentIndex < allChapterIds.size - 1
 
             val scrollY = chapter.lastCursorPos
             binding.scrollView.post { binding.scrollView.scrollTo(0, scrollY) }
@@ -580,6 +602,33 @@ class ReaderActivity : AppCompatActivity() {
         saveScrollPosition()
         loadChapter(allChapterIds[newIndex])
         binding.scrollView.scrollTo(0, 0)
+    }
+
+    /**
+     * 翻页导航：按屏幕高度滚动。
+     * direction > 0 = 向后翻页；direction < 0 = 向前翻页。
+     * 已到末尾/开头时切换到下一章/上一章。
+     */
+    private fun navigatePage(direction: Int) {
+        val sv = binding.scrollView
+        val child = sv.getChildAt(0) ?: return
+        val pageHeight = sv.height
+        val contentHeight = child.height
+        val currentY = sv.scrollY
+        if (direction > 0) {
+            val maxScroll = (contentHeight - pageHeight).coerceAtLeast(0)
+            if (currentY >= maxScroll - SCROLL_TOLERANCE) {
+                navigateChapter(1)
+            } else {
+                sv.smoothScrollTo(0, (currentY + pageHeight).coerceAtMost(maxScroll))
+            }
+        } else {
+            if (currentY <= SCROLL_TOLERANCE) {
+                navigateChapter(-1)
+            } else {
+                sv.smoothScrollTo(0, (currentY - pageHeight).coerceAtLeast(0))
+            }
+        }
     }
 
     private fun saveScrollPosition() {

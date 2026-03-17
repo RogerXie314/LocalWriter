@@ -24,8 +24,10 @@ class ChapterViewModel(
         bookRepo.observeVolumes(bookId)
     }
 
-    private val _event = MutableLiveData<UiEvent>()
-    val event: LiveData<UiEvent> = _event
+    private val _event = MutableLiveData<UiEvent?>(null)
+    val event: LiveData<UiEvent?> = _event
+
+    fun clearEvent() { _event.value = null }
 
     sealed class UiEvent {
         data class NavigateToEditor(val chapterId: Long, val bookId: Long) : UiEvent()

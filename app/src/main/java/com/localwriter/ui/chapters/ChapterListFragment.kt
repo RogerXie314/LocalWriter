@@ -124,6 +124,7 @@ class ChapterListFragment : Fragment() {
 
     private fun observeEvents() {
         viewModel.event.observe(viewLifecycleOwner) { event ->
+            event ?: return@observe
             when (event) {
                 is ChapterViewModel.UiEvent.NavigateToReader -> {
                     val intent = Intent(requireActivity(), ReaderActivity::class.java).apply {
@@ -144,6 +145,7 @@ class ChapterListFragment : Fragment() {
                 is ChapterViewModel.UiEvent.ChapterCreated ->
                     Toast.makeText(context, "章节已创建", Toast.LENGTH_SHORT).show()
             }
+            viewModel.clearEvent()
         }
     }
 
