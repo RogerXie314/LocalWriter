@@ -2,15 +2,11 @@ package com.localwriter.ui.main
 
 import android.content.Intent
 import android.os.Bundle
-import android.view.Menu
-import android.view.MenuItem
 import androidx.appcompat.app.AppCompatActivity
-import com.localwriter.LocalWriterApp
 import com.localwriter.R
 import com.localwriter.databinding.ActivityMainBinding
 import com.localwriter.ui.auth.AuthActivity
 import com.localwriter.ui.books.BookListFragment
-import com.localwriter.ui.settings.SettingsActivity
 import com.localwriter.utils.SessionManager
 import com.localwriter.utils.ThemeManager
 
@@ -41,11 +37,6 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        setSupportActionBar(binding.toolbar)
-        supportActionBar?.title = "LocalWriter"
-        // 返回书架图标（可在章节列表时 Fragment 自己处理 up 导航）
-        supportActionBar?.setDisplayHomeAsUpEnabled(false)
-
         if (savedInstanceState == null) {
             setupNavPanel()
         }
@@ -55,26 +46,6 @@ class MainActivity : AppCompatActivity() {
         supportFragmentManager.beginTransaction()
             .replace(R.id.nav_panel_container, BookListFragment())
             .commit()
-    }
-
-    override fun onCreateOptionsMenu(menu: Menu): Boolean {
-        menuInflater.inflate(R.menu.menu_main, menu)
-        return true
-    }
-
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        return when (item.itemId) {
-            R.id.action_settings -> {
-                startActivity(Intent(this, SettingsActivity::class.java))
-                true
-            }
-            R.id.action_lock -> {
-                SessionManager.lock(this)
-                finish()
-                true
-            }
-            else -> super.onOptionsItemSelected(item)
-        }
     }
 
     override fun onResume() {

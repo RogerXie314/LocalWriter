@@ -1,28 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  手机主界面布局：单栏，书籍/章节列表直接显示（无抽屉）
+  手机主界面布局：无顶栏（品牌栏由 BookListFragment header 承担）
   平板双栏布局见 layout-w600dp/activity_main.xml
 -->
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/drawerLayout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:fitsSystemWindows="true">
-
-    <com.google.android.material.appbar.AppBarLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content">
-        <androidx.appcompat.widget.Toolbar
-            android:id="@+id/toolbar"
-            android:layout_width="match_parent"
-            android:layout_height="?attr/actionBarSize"
-            android:background="?attr/colorPrimary"
-            app:titleTextColor="@color/white"
-            app:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"/>
-    </com.google.android.material.appbar.AppBarLayout>
 
     <!-- 手机主内容区：书籍/章节列表直接呈现 -->
     <FrameLayout

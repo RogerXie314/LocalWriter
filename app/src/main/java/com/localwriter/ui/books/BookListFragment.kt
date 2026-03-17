@@ -24,6 +24,7 @@ import com.localwriter.databinding.FragmentBookListBinding
 import com.localwriter.databinding.DialogEditTitleBinding
 import com.localwriter.ui.chapters.ChapterListFragment
 import com.localwriter.ui.reader.ReaderActivity
+import com.localwriter.ui.settings.SettingsActivity
 import com.localwriter.utils.SessionManager
 import com.localwriter.utils.io.BookExporter
 import com.localwriter.utils.io.BookImporter
@@ -85,8 +86,19 @@ class BookListFragment : Fragment() {
         setupFab()
         setupImportButton()
         setupSortButton()
+        setupSettingsLockButtons()
         observeData()
         observeEvents()
+    }
+
+    private fun setupSettingsLockButtons() {
+        binding.ibSettings.setOnClickListener {
+            startActivity(Intent(requireContext(), SettingsActivity::class.java))
+        }
+        binding.ibLock.setOnClickListener {
+            SessionManager.lock(requireContext())
+            requireActivity().finish()
+        }
     }
 
     private fun setupRecyclerView() {
@@ -141,7 +153,7 @@ class BookListFragment : Fragment() {
     private fun observeData() {
         viewModel.books.observe(viewLifecycleOwner) { books ->
             adapter.submitList(books)
-            binding.tvEmpty.visibility = if (books.isEmpty()) View.VISIBLE else View.GONE
+            binding.layoutEmpty.visibility = if (books.isEmpty()) View.VISIBLE else View.GONE
         }
     }
 
