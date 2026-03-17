@@ -116,12 +116,15 @@ class GesturePatternView @JvmOverloads constructor(
         super.onSizeChanged(w, h, oldw, oldh)
         val size    = min(w, h).toFloat()
         val cell    = size / 3f
+        // 将格子整体居中：offsetX/Y 补偿宽高不等时剩余空间
+        val offsetX = (w - size) / 2f
+        val offsetY = (h - size) / 2f
 
         for (row in 0..2) {
             for (col in 0..2) {
                 nodePositions[row * 3 + col].set(
-                    col * cell + cell / 2f,
-                    row * cell + cell / 2f
+                    offsetX + col * cell + cell / 2f,
+                    offsetY + row * cell + cell / 2f
                 )
             }
         }

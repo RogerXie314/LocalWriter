@@ -1,12 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- 书籍列表 Fragment 布局 -->
-<androidx.coordinatorlayout.widget.CoordinatorLayout
+<!-- 根改为 LinearLayout，彻底避免 RecyclerView 在 CoordinatorLayout 中
+     覆盖 header 导致 header 按钮点击被拦截的问题 -->
+<LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:orientation="vertical">
 
-    <!-- 头部 -->
+    <!-- 头部工具栏 -->
     <LinearLayout
         android:id="@+id/headerLayout"
         android:layout_width="match_parent"
@@ -27,53 +29,60 @@
 
         <ImageButton
             android:id="@+id/ibImportBook"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
-            android:layout_marginEnd="8dp"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_marginEnd="4dp"
             android:src="@drawable/ic_import"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:tint="@color/white"
+            android:padding="4dp"
             android:contentDescription="导入书籍"/>
 
-        <!-- M8: 排序切换按钮 -->
         <ImageButton
             android:id="@+id/ibSortBooks"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
-            android:layout_marginEnd="8dp"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_marginEnd="4dp"
             android:src="@drawable/ic_sort"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:tint="@color/white"
+            android:padding="4dp"
             android:contentDescription="切换排序"/>
 
         <ImageButton
             android:id="@+id/fabNewBook"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
             android:src="@drawable/ic_add"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:tint="@color/white"
+            android:padding="4dp"
             android:contentDescription="新建书籍"/>
     </LinearLayout>
 
-    <!-- 书籍列表 -->
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/rvBooks"
+    <!-- 书籍列表（在 header 下方独立占剩余高度，无覆盖问题） -->
+    <FrameLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:paddingTop="56dp"
-        android:clipToPadding="false"
-        app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"/>
+        android:layout_height="0dp"
+        android:layout_weight="1">
 
-    <!-- 空状态 -->
-    <TextView
-        android:id="@+id/tvEmpty"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:text="暂无书籍\n点击右上角 + 创建第一本书"
-        android:gravity="center"
-        android:textColor="@color/text_secondary"
-        android:visibility="gone"
-        android:lineSpacingMultiplier="1.5"/>
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rvBooks"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:clipToPadding="false"
+            android:paddingBottom="8dp"/>
 
-</androidx.coordinatorlayout.widget.CoordinatorLayout>
+        <!-- 空状态居中显示 -->
+        <TextView
+            android:id="@+id/tvEmpty"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:text="暂无书籍\n点击右上角 ＋ 创建第一本书"
+            android:gravity="center"
+            android:textColor="@color/text_secondary"
+            android:visibility="gone"
+            android:lineSpacingMultiplier="1.5"/>
+    </FrameLayout>
+
+</LinearLayout>

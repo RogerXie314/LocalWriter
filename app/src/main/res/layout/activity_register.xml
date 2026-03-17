@@ -11,36 +11,58 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
+    android:fitsSystemWindows="true"
     android:background="@color/auth_bg">
 
-    <!-- 步骤标题 -->
-    <androidx.appcompat.widget.Toolbar
+    <!-- 品牌区（与登录页一致） -->
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="?attr/actionBarSize"
+        android:layout_height="0dp"
+        android:layout_weight="2"
+        android:orientation="vertical"
+        android:gravity="center"
         android:background="@color/primary"
-        app:titleTextColor="@color/white">
+        android:paddingBottom="16dp">
+
+        <ImageView
+            android:layout_width="72dp"
+            android:layout_height="72dp"
+            android:src="@mipmap/ic_launcher"
+            android:layout_marginBottom="12dp"
+            android:contentDescription="应用图标"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="LocalWriter"
+            android:textSize="28sp"
+            android:textStyle="bold"
+            android:textColor="@color/white"
+            android:fontFamily="serif"
+            android:layout_marginBottom="4dp"/>
+
         <TextView
             android:id="@+id/tvStepTitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="创建账号（第1步/3步）"
-            android:textColor="@color/white"
-            android:textSize="16sp"
-            android:textStyle="bold"/>
-    </androidx.appcompat.widget.Toolbar>
+            android:text="创建账号（第1步 / 共3步）"
+            android:textSize="13sp"
+            android:textColor="#B3FFFFFF"/>
+    </LinearLayout>
 
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1">
+        android:layout_weight="3"
+        android:fillViewport="true">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="24dp">
+            android:padding="20dp">
 
-            <!-- 步骤1：基本信息 -->
+        <!-- 步骤1：基本信息 -->
             <LinearLayout
                 android:id="@+id/stepBasic"
                 android:layout_width="match_parent"
