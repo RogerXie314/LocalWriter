@@ -137,6 +137,8 @@ class AuthActivity : AppCompatActivity() {
                 viewModel.loginWithGesture(userId, pattern)
             }
         }
+        // 手势界面内「密码登录」按钮 → 切换回密码输入区
+        fragment.switchToPasswordCallback = { showPasswordLogin() }
         supportFragmentManager.beginTransaction()
             .replace(binding.flGestureContainer.id, fragment)
             .commit()

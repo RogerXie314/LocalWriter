@@ -8,6 +8,7 @@ import androidx.appcompat.app.AppCompatActivity
 import com.localwriter.LocalWriterApp
 import com.localwriter.R
 import com.localwriter.databinding.ActivityMainBinding
+import com.localwriter.ui.auth.AuthActivity
 import com.localwriter.ui.books.BookListFragment
 import com.localwriter.ui.settings.SettingsActivity
 import com.localwriter.utils.SessionManager
@@ -78,6 +79,14 @@ class MainActivity : AppCompatActivity() {
         super.onResume()
         if (!SessionManager.isLoggedIn(this)) {
             finish()
+            return
+        }
+        if (SessionManager.isLocked(this)) {
+            startActivity(Intent(this, AuthActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+            })
+            finish()
+            return
         }
     }
 }

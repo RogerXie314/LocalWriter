@@ -13,6 +13,7 @@ import androidx.lifecycle.lifecycleScope
 import com.localwriter.LocalWriterApp
 import com.localwriter.R
 import com.localwriter.databinding.ActivityReaderBinding
+import com.localwriter.ui.auth.AuthActivity
 import com.localwriter.ui.editor.EditorActivity
 import com.localwriter.utils.SessionManager
 import kotlinx.coroutines.Dispatchers
@@ -101,6 +102,16 @@ class ReaderActivity : AppCompatActivity() {
             .getFloat(KEY_FONT_SIZE, 0f)
 
         loadBookChapters()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (SessionManager.isLoggedIn(this) && SessionManager.isLocked(this)) {
+            startActivity(Intent(this, AuthActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+            })
+            finish()
+        }
     }
 
     override fun onPause() {

@@ -1,8 +1,12 @@
 package com.localwriter
 
 import android.app.Application
+import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.ProcessLifecycleOwner
 import com.localwriter.data.db.AppDatabase
 import com.localwriter.data.repository.*
+import com.localwriter.utils.SessionManager
 
 class LocalWriterApp : Application() {
 
@@ -26,5 +30,13 @@ class LocalWriterApp : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        // 当整个应用退到后台时自动触发锁定（由 onResume 中的 isLocked() 完成宽限期判断）
+        ProcessLifecycleOwner.get().lifecycle.addObserver(object : DefaultLifecycleObserver {
+            override fun onStop(owner: LifecycleOwner) {
+                if (SessionManager.isLoggedIn(this@LocalWriterApp)) {
+                    SessionManager.lock(this@LocalWriterApp)
+                }
+            }
+        })
     }
 }

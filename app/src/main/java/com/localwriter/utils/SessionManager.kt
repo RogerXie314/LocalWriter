@@ -16,10 +16,30 @@ object SessionManager {
     private const val KEY_USER_ID = "session_user_id"
     private const val KEY_IS_LOCKED = "session_locked"
     private const val KEY_LOCK_TIMESTAMP = "session_lock_timestamp"
+    /** 锁定超时分钟数，-1 = 从不自动锁定，0 = 立即锁定 */
+    private const val KEY_LOCK_TIMEOUT_MINUTES = "lock_timeout_minutes"
     private const val NO_USER = -1L
 
-    /** 宽限期：5 分钟内切换应用不需要重新验证 */
-    private const val GRACE_PERIOD_MS = 5 * 60 * 1000L
+    /** 默认 5 分钟，用于首次安装时 */
+    private const val DEFAULT_LOCK_TIMEOUT_MINUTES = 5
+
+    // ─── 超时设置 ─────────────────────────────────────────────────────────
+
+    /**
+     * 设置锁定超时分钟数
+     * @param minutes -1=从不自动锁定, 0=立即锁定, 正整数=N分钟后锁定
+     */
+    fun setLockTimeout(context: Context, minutes: Int) {
+        SecurityUtils.getEncryptedPrefs(context).edit()
+            .putInt(KEY_LOCK_TIMEOUT_MINUTES, minutes)
+            .apply()
+    }
+
+    /** 读取当前设置的锁定超时分钟数 */
+    fun getLockTimeout(context: Context): Int {
+        return SecurityUtils.getEncryptedPrefs(context)
+            .getInt(KEY_LOCK_TIMEOUT_MINUTES, DEFAULT_LOCK_TIMEOUT_MINUTES)
+    }
 
     fun saveUserId(context: Context, userId: Long) {
         SecurityUtils.getEncryptedPrefs(context).edit()
@@ -59,16 +79,31 @@ object SessionManager {
 
     /**
      * 是否需要重新验证。
-     * 在宽限期内（5 分钟）切换回前台不需要重新验证。
+     * 根据用户设置的锁定超时判断：
+     *  -1 = 从不自动锁定（但手动锁定仍有效）
+     *   0 = 立即锁定（切换后台即需验证）
+     *   N = N 分钟宽限期
      */
     fun isLocked(context: Context): Boolean {
         val prefs = SecurityUtils.getEncryptedPrefs(context)
         val locked = prefs.getBoolean(KEY_IS_LOCKED, false)
         if (!locked) return false
 
+        val timeoutMinutes = getLockTimeout(context)
+
+        // 从不自动锁定（-1）：宽限期无限，自动解锁
+        if (timeoutMinutes < 0) {
+            unlock(context)
+            return false
+        }
+
+        // 立即锁定（0）：锁定时间戳一设就需要验证
+        if (timeoutMinutes == 0) return true
+
         val lockTimestamp = prefs.getLong(KEY_LOCK_TIMESTAMP, 0L)
         val elapsed = System.currentTimeMillis() - lockTimestamp
-        return if (elapsed < GRACE_PERIOD_MS) {
+        val gracePeriodMs = timeoutMinutes * 60 * 1000L
+        return if (elapsed < gracePeriodMs) {
             // 在宽限期内，自动解锁
             unlock(context)
             false

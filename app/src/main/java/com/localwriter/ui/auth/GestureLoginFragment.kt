@@ -32,6 +32,8 @@ class GestureLoginFragment : Fragment() {
     }
 
     var callback: GestureCallback? = null
+    /** 点击「密码登录」时通知父界面切换 */
+    var switchToPasswordCallback: (() -> Unit)? = null
 
     companion object {
         private const val ARG_USER_ID = "userId"
@@ -82,7 +84,7 @@ class GestureLoginFragment : Fragment() {
         }
 
         binding.tvSwitchToPassword.setOnClickListener {
-            parentFragmentManager.popBackStack()
+            switchToPasswordCallback?.invoke()
         }
     }
 

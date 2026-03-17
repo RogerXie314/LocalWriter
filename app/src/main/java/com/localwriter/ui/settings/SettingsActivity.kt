@@ -4,6 +4,8 @@ import android.app.Activity
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.widget.AdapterView
+import android.widget.ArrayAdapter
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.SeekBar
@@ -18,6 +20,7 @@ import com.localwriter.LocalWriterApp
 import com.localwriter.R
 import com.localwriter.data.db.entity.UserSettings
 import com.localwriter.databinding.ActivitySettingsBinding
+import com.localwriter.ui.auth.AuthActivity
 import com.localwriter.ui.auth.GestureLoginFragment
 import com.localwriter.utils.SessionManager
 import kotlinx.coroutines.launch
@@ -77,6 +80,7 @@ class SettingsActivity : AppCompatActivity() {
         setupColorPicker()
         setupAutoSave()
         setupSecuritySection()
+        setupLockTimeoutSpinner()
         setupAboutSection()
         observeSettings()
     }
@@ -202,6 +206,36 @@ class SettingsActivity : AppCompatActivity() {
         binding.btnSetGesture.setOnClickListener    { showSetGestureDialog() }
         binding.switchBiometric.setOnCheckedChangeListener { _, checked ->
             viewModel.enableBiometric(checked)
+        }
+    }
+
+    /** 设置后台自动锁定超时 Spinner */
+    private fun setupLockTimeoutSpinner() {
+        // 选项：显示文字 + 对应分钟数（-1=从不）
+        val options = listOf(
+            "立即锁定" to 0,
+            "1 分钟" to 1,
+            "5 分钟" to 5,
+            "15 分钟" to 15,
+            "30 分钟" to 30,
+            "1 小时" to 60,
+            "从不自动锁定" to -1
+        )
+        val labels = options.map { it.first }
+        val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, labels)
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        binding.spinnerLockTimeout.adapter = adapter
+
+        // 选中当前已保存的超时
+        val currentMinutes = SessionManager.getLockTimeout(this)
+        val currentIdx = options.indexOfFirst { it.second == currentMinutes }.coerceAtLeast(2)
+        binding.spinnerLockTimeout.setSelection(currentIdx, false)
+
+        binding.spinnerLockTimeout.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, view: android.view.View?, pos: Int, id: Long) {
+                SessionManager.setLockTimeout(this@SettingsActivity, options[pos].second)
+            }
+            override fun onNothingSelected(parent: AdapterView<*>?) {}
         }
     }
 
@@ -343,6 +377,17 @@ class SettingsActivity : AppCompatActivity() {
 
     private fun toast(msg: String) =
         Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
+
+    override fun onResume() {
+        super.onResume()
+        if (SessionManager.isLoggedIn(this) && SessionManager.isLocked(this)) {
+            startActivity(Intent(this, AuthActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+            })
+            finish()
+            return
+        }
+    }
 
     override fun onSupportNavigateUp(): Boolean {
         finish()

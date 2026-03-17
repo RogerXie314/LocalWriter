@@ -18,6 +18,7 @@ import kotlinx.coroutines.launch
 import com.localwriter.LocalWriterApp
 import com.localwriter.R
 import com.localwriter.databinding.ActivityEditorBinding
+import com.localwriter.ui.auth.AuthActivity
 import com.localwriter.ui.settings.SettingsActivity
 import com.localwriter.utils.SessionManager
 import com.localwriter.utils.UndoRedoHelper
@@ -208,6 +209,16 @@ class EditorActivity : AppCompatActivity() {
             .setTitle("常用句式")
             .setItems(phrases) { _, which -> insertText(phrases[which]) }
             .show()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (SessionManager.isLoggedIn(this) && SessionManager.isLocked(this)) {
+            startActivity(Intent(this, AuthActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+            })
+            finish()
+        }
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
