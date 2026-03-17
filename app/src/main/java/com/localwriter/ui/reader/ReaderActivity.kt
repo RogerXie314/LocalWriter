@@ -16,6 +16,7 @@ import com.localwriter.databinding.ActivityReaderBinding
 import com.localwriter.ui.auth.AuthActivity
 import com.localwriter.ui.editor.EditorActivity
 import com.localwriter.utils.SessionManager
+import com.localwriter.utils.ThemeManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -66,6 +67,7 @@ class ReaderActivity : AppCompatActivity() {
     // ─────────────────── 生命周期 ───────────────────
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        ThemeManager.applyTheme(this)
         super.onCreate(savedInstanceState)
         binding = ActivityReaderBinding.inflate(layoutInflater)
         setContentView(binding.root)

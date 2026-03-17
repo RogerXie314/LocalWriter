@@ -64,9 +64,9 @@ class BookListFragment : Fragment() {
         }
     }
 
-    /** SAF 文件打开选择器（导入用） */
+    /** 文件选择器（导入用）—— GetContent 兼容更多国产/OEM 设备，星号斜杠 允许浏览所有文件 */
     private val importLauncher = registerForActivityResult(
-        ActivityResultContracts.OpenDocument()
+        ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         if (uri != null) processImport(uri)
     }
@@ -121,13 +121,8 @@ class BookListFragment : Fragment() {
 
     private fun setupImportButton() {
         binding.ibImportBook.setOnClickListener {
-            // 打开系统文件选择器，支持 TXT / EPUB / DOCX
-            importLauncher.launch(arrayOf(
-                "text/plain",
-                "application/epub+zip",
-                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                "application/octet-stream"  // 部分文件管理器对 TXT 用此类型
-            ))
+            // 使用 */* 让系统文件管理器显示所有文件，兼容国产/OEM 设备
+            importLauncher.launch("*/*")
         }
     }
 

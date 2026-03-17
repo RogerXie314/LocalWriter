@@ -2,11 +2,13 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <!-- 文件读写权限 -->
+    <!-- READ_EXTERNAL_STORAGE：Android 12L 及以下（API ≤ 32）需要此权限读取外部存储 -->
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="32" />
+    <!-- WRITE_EXTERNAL_STORAGE：Android 9 及以下（API ≤ 29）需要此权限写入外部存储 -->
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
         android:maxSdkVersion="29" />
-    <uses-permission android:name="android.permission.READ_MEDIA_DOCUMENTS" />
+    <!-- Android 13+（API 33+）使用 SAF（GetContent/OpenDocument）无需声明额外文件权限 -->
     <uses-permission android:name="android.permission.USE_BIOMETRIC" />
     <uses-permission android:name="android.permission.USE_FINGERPRINT" />
 

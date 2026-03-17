@@ -30,4 +30,52 @@
     <style name="Theme.LocalWriter.Auth" parent="Theme.LocalWriter">
         <item name="android:windowBackground">@color/auth_bg</item>
     </style>
+
+    <!-- ── 主题皮肤变体 ─────────────────────────────────────────── -->
+
+    <!-- 深蓝文墨 -->
+    <style name="Theme.LocalWriter.Blue" parent="Theme.LocalWriter">
+        <item name="colorPrimary">#1565C0</item>
+        <item name="colorPrimaryVariant">#0D47A1</item>
+        <item name="colorSecondary">#42A5F5</item>
+        <item name="android:statusBarColor">#0D47A1</item>
+    </style>
+    <style name="Theme.LocalWriter.Blue.Editor" parent="Theme.LocalWriter.Blue">
+        <item name="android:windowFullscreen">false</item>
+    </style>
+
+    <!-- 翠竹青绿 -->
+    <style name="Theme.LocalWriter.Green" parent="Theme.LocalWriter">
+        <item name="colorPrimary">#2E7D32</item>
+        <item name="colorPrimaryVariant">#1B5E20</item>
+        <item name="colorSecondary">#66BB6A</item>
+        <item name="android:statusBarColor">#1B5E20</item>
+    </style>
+    <style name="Theme.LocalWriter.Green.Editor" parent="Theme.LocalWriter.Green">
+        <item name="android:windowFullscreen">false</item>
+    </style>
+
+    <!-- 深夜暗黑 -->
+    <style name="Theme.LocalWriter.Dark" parent="Theme.LocalWriter">
+        <item name="colorPrimary">#212121</item>
+        <item name="colorPrimaryVariant">#000000</item>
+        <item name="colorSecondary">#BDBDBD</item>
+        <item name="android:statusBarColor">#000000</item>
+        <item name="android:windowBackground">#121212</item>
+    </style>
+    <style name="Theme.LocalWriter.Dark.Editor" parent="Theme.LocalWriter.Dark">
+        <item name="android:windowFullscreen">false</item>
+    </style>
+
+    <!-- 玫瑰紫红 -->
+    <style name="Theme.LocalWriter.Rose" parent="Theme.LocalWriter">
+        <item name="colorPrimary">#AD1457</item>
+        <item name="colorPrimaryVariant">#880E4F</item>
+        <item name="colorSecondary">#F06292</item>
+        <item name="android:statusBarColor">#880E4F</item>
+    </style>
+    <style name="Theme.LocalWriter.Rose.Editor" parent="Theme.LocalWriter.Rose">
+        <item name="android:windowFullscreen">false</item>
+    </style>
+
 </resources>

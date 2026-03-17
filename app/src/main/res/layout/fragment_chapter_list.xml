@@ -11,10 +11,11 @@
         android:id="@+id/toolbar"
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"
-        android:background="@color/primary"
+        android:background="?attr/colorPrimary"
         app:navigationIcon="@drawable/ic_arrow_back"
         app:navigationContentDescription="返回书籍列表"
-        app:menu="@menu/menu_chapter_list"/>
+        app:menu="@menu/menu_chapter_list"
+        app:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"/>
 
     <!-- 章节列表与空状态叠层，空状态垂直居中 -->
     <FrameLayout

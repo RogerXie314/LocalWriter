@@ -12,6 +12,7 @@ import com.localwriter.ui.auth.AuthActivity
 import com.localwriter.ui.books.BookListFragment
 import com.localwriter.ui.settings.SettingsActivity
 import com.localwriter.utils.SessionManager
+import com.localwriter.utils.ThemeManager
 
 /**
  * 主界面
@@ -29,6 +30,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        ThemeManager.applyTheme(this)
         super.onCreate(savedInstanceState)
 
         if (!SessionManager.isLoggedIn(this)) {

@@ -11,6 +11,7 @@ import com.localwriter.LocalWriterApp
 import com.localwriter.databinding.ActivityRegisterBinding
 import com.localwriter.ui.main.MainActivity
 import com.localwriter.utils.SessionManager
+import com.localwriter.utils.ThemeManager
 import kotlinx.coroutines.launch
 
 /**
@@ -38,6 +39,7 @@ class RegisterActivity : AppCompatActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        ThemeManager.applyTheme(this)
         super.onCreate(savedInstanceState)
         binding = ActivityRegisterBinding.inflate(layoutInflater)
         setContentView(binding.root)

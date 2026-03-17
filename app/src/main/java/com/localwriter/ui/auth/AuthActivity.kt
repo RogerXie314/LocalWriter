@@ -13,6 +13,7 @@ import com.localwriter.LocalWriterApp
 import com.localwriter.databinding.ActivityAuthBinding
 import com.localwriter.ui.main.MainActivity
 import com.localwriter.utils.SessionManager
+import com.localwriter.utils.ThemeManager
 
 /**
  * 认证界面
@@ -30,6 +31,7 @@ class AuthActivity : AppCompatActivity() {
     private var currentUserId: Long = -1L
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        ThemeManager.applyTheme(this)
         super.onCreate(savedInstanceState)
         binding = ActivityAuthBinding.inflate(layoutInflater)
         setContentView(binding.root)

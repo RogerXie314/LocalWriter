@@ -19,8 +19,9 @@
             android:id="@+id/toolbar"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
-            android:background="@color/primary"
-            app:titleTextColor="@color/white"/>
+            android:background="?attr/colorPrimary"
+            app:titleTextColor="@color/white"
+            app:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"/>
     </com.google.android.material.appbar.AppBarLayout>
 
     <!-- 手机主内容区：书籍/章节列表直接呈现 -->

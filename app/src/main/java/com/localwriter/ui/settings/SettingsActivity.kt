@@ -23,6 +23,7 @@ import com.localwriter.databinding.ActivitySettingsBinding
 import com.localwriter.ui.auth.AuthActivity
 import com.localwriter.ui.auth.GestureLoginFragment
 import com.localwriter.utils.SessionManager
+import com.localwriter.utils.ThemeManager
 import kotlinx.coroutines.launch
 
 /**
@@ -63,6 +64,7 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        ThemeManager.applyTheme(this)
         super.onCreate(savedInstanceState)
         binding = ActivitySettingsBinding.inflate(layoutInflater)
         setContentView(binding.root)
@@ -74,6 +76,7 @@ class SettingsActivity : AppCompatActivity() {
         val userId = SessionManager.getUserId(this)
         viewModel.load(userId)
 
+        setupThemeSection()
         setupFontSizeSeekBar()
         setupFontFamilyChips()
         setupBackgroundPresets()
@@ -83,6 +86,48 @@ class SettingsActivity : AppCompatActivity() {
         setupLockTimeoutSpinner()
         setupAboutSection()
         observeSettings()
+    }
+
+    /** 切换主题皮肤：显示圆形色块，当前主题加勾选标记 */
+    private fun setupThemeSection() {
+        val container = binding.llThemeRow
+        container.removeAllViews()
+        val currentIndex = ThemeManager.getSavedIndex(this)
+        val dp = resources.displayMetrics.density
+        val size = (44 * dp).toInt()
+        val margin = (8 * dp).toInt()
+
+        ThemeManager.themes.forEachIndexed { index, theme ->
+            val btn = android.widget.ImageButton(this).apply {
+                val params = android.widget.LinearLayout.LayoutParams(size, size)
+                params.marginEnd = margin
+                layoutParams = params
+                setBackgroundResource(android.R.drawable.btn_default_small)
+                background = android.graphics.drawable.GradientDrawable().also { d ->
+                    d.shape = android.graphics.drawable.GradientDrawable.OVAL
+                    d.setColor(theme.colorSample)
+                    if (index == currentIndex) {
+                        d.setStroke((3 * dp).toInt(), android.graphics.Color.WHITE)
+                    }
+                }
+                contentDescription = theme.nameZh
+                tooltipText = theme.nameZh
+                setOnClickListener {
+                    if (index != ThemeManager.getSavedIndex(this@SettingsActivity)) {
+                        ThemeManager.saveTheme(this@SettingsActivity, index)
+                        toast("已切换主题【${theme.nameZh}】")
+                        // 重启应用以全面生效
+                        val intent = android.content.Intent(this@SettingsActivity,
+                            com.localwriter.ui.main.MainActivity::class.java).apply {
+                            flags = android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK or
+                                    android.content.Intent.FLAG_ACTIVITY_NEW_TASK
+                        }
+                        startActivity(intent)
+                    }
+                }
+            }
+            container.addView(btn)
+        }
     }
 
     private fun setupFontSizeSeekBar() {
@@ -307,10 +352,23 @@ class SettingsActivity : AppCompatActivity() {
             .show()
     }
 
-    /** 设置手势密码——在对话框里嵌入 GestureLoginFragment */
+    /** 设置手势密码 */
     private fun showSetGestureDialog() {
         val userId = SessionManager.getUserId(this)
         if (userId == -1L) { toast("请先登录"); return }
+
+        // 先创建容器和对话框，show() 之后再加 Fragment（否则 container 不在 window 层级里）
+        val containerId = android.view.View.generateViewId()
+        val container = android.widget.FrameLayout(this).also { it.id = containerId }
+
+        val dialog = AlertDialog.Builder(this)
+            .setTitle("设置手势密码")
+            .setView(container)
+            .setNegativeButton("取消", null)
+            .create()
+
+        // 必须先 show，container 才会被加入 window 层级
+        dialog.show()
 
         val fragment = GestureLoginFragment.newInstance(userId, isSetup = true)
         fragment.callback = object : GestureLoginFragment.GestureCallback {
@@ -318,23 +376,15 @@ class SettingsActivity : AppCompatActivity() {
                 lifecycleScope.launch {
                     val repo = (application as LocalWriterApp).authRepository
                     repo.setGesturePattern(userId, pattern)
+                    dialog.dismiss()
                     toast("手势密码已设置")
                 }
             }
         }
 
-        val dialog = AlertDialog.Builder(this)
-            .setTitle("设置手势密码")
-            .setView(android.widget.FrameLayout(this).also { container ->
-                container.id = android.view.View.generateViewId()
-                // Fragment 嵌入在 AlertDialog 布局里
-                supportFragmentManager.beginTransaction()
-                    .replace(container.id, fragment)
-                    .commitNow()
-            })
-            .setNegativeButton("取消", null)
-            .create()
-        dialog.show()
+        supportFragmentManager.beginTransaction()
+            .replace(containerId, fragment)
+            .commitAllowingStateLoss()
     }
 
     private fun observeSettings() {

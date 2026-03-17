@@ -21,6 +21,7 @@ import com.localwriter.databinding.ActivityEditorBinding
 import com.localwriter.ui.auth.AuthActivity
 import com.localwriter.ui.settings.SettingsActivity
 import com.localwriter.utils.SessionManager
+import com.localwriter.utils.ThemeManager
 import com.localwriter.utils.UndoRedoHelper
 
 /**
@@ -57,6 +58,7 @@ class EditorActivity : AppCompatActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        ThemeManager.applyTheme(this)
         super.onCreate(savedInstanceState)
         binding = ActivityEditorBinding.inflate(layoutInflater)
         setContentView(binding.root)
