@@ -143,8 +143,7 @@ class ReaderActivity : AppCompatActivity() {
         binding.btnPrevChapter.setOnClickListener { navigateChapter(-1) }
         binding.btnNextChapter.setOnClickListener { navigateChapter(+1) }
 
-        // 点击正文切换沉浸模式
-        binding.scrollView.setOnClickListener { toggleBars() }
+        // 点击正文切换沉浸模式（scrollView 的 tap 由 GestureDetector.onSingleTapUp 处理）
         binding.tvContent.setOnClickListener  { toggleBars() }
 
         // 书签
@@ -668,6 +667,9 @@ class ReaderActivity : AppCompatActivity() {
             sheetBinding.tvTocSortOrder.text = if (isReversed) "倒序" else "正序"
             displayIds.reverse()
             displayTitles.reverse()
+            // 同步更新高亮位置：倒序时 activeIndex = totalSize-1-currentIndex
+            adapter.activeIndex = if (isReversed) allChapterIds.size - 1 - currentIndex
+                                  else currentIndex
             adapter.notifyDataSetChanged()
             val newScroll = if (isReversed) allChapterIds.size - 1 - currentIndex else currentIndex
             sheetBinding.rvTocChapters.scrollToPosition(newScroll.coerceAtLeast(0))
@@ -679,7 +681,7 @@ class ReaderActivity : AppCompatActivity() {
     /** 目录列表 Adapter */
     private inner class TocAdapter(
         private val titles: List<String>,
-        private val activeIndex: Int,
+        var activeIndex: Int,
         private val onItemClick: (Int) -> Unit
     ) : RecyclerView.Adapter<TocAdapter.VH>() {
 
@@ -700,8 +702,9 @@ class ReaderActivity : AppCompatActivity() {
             holder.b.tvTocChapterTitle.setTextColor(
                 if (isActive) activeColor else 0xFF1A1A1A.toInt())
             holder.b.tvTocChapterTitle.textSize = if (isActive) 15.5f else 15f
-            // 当前章节圆点高亮
-            val dotDrawable = holder.b.vChapterDot.background as? android.graphics.drawable.GradientDrawable
+            // 当前章节圆点高亮（mutate 防止共享 ConstantState 导致所有圆点颜色相同）
+            val dotDrawable = (holder.b.vChapterDot.background as? android.graphics.drawable.GradientDrawable)
+                ?.mutate() as? android.graphics.drawable.GradientDrawable
             dotDrawable?.setColor(if (isActive) activeColor else 0xFFCCCCCC.toInt())
             holder.itemView.setOnClickListener { onItemClick(position) }
         }
