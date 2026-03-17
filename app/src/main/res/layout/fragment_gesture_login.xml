@@ -18,30 +18,11 @@
         android:textColor="@color/on_surface"
         android:layout_marginBottom="24dp"/>
 
-    <!-- 手势宫格（实际使用第三方 GestureLockView）
-         在真实集成中，将此处替换为 GestureLockView
-    -->
-    <FrameLayout
-        android:id="@+id/gestureViewContainer"
-        android:layout_width="240dp"
-        android:layout_height="240dp"
-        android:background="@drawable/bg_gesture_grid">
-        <!--
-        <com.github.ihsanbal.GestureLockView
-            android:id="@+id/gestureLockView"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"/>
-        -->
-        <!-- 演示用占位按钮 -->
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnGestureDemo"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:text="模拟手势完成\n（开发时使用）"
-            android:textSize="12sp"
-            style="@style/Widget.Material3.Button.OutlinedButton"/>
-    </FrameLayout>
+    <!-- 九宫格手势密码视图（自定义 Canvas View）-->
+    <com.localwriter.ui.auth.GesturePatternView
+        android:id="@+id/gestureLockView"
+        android:layout_width="280dp"
+        android:layout_height="280dp"/>
 
     <TextView
         android:id="@+id/tvSwitchToPassword"

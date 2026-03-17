@@ -229,7 +229,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Roger_xie"
+                            android:text="解若耿"
                             android:textSize="13sp"
                             android:textColor="@color/on_surface"
                             android:textStyle="bold"/>
@@ -253,6 +253,36 @@
                             android:text="数据完全展存在本地设备，不上传任何服务器"
                             android:textSize="13sp"
                             android:textColor="@color/on_surface"/>
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:layout_marginTop="6dp"
+                        android:background="?attr/selectableItemBackground"
+                        android:padding="2dp"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:id="@+id/llAboutRepo">
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="开源仓库"
+                            android:textSize="13sp"
+                            android:textColor="@color/text_secondary"/>
+                        <TextView
+                            android:id="@+id/tvAboutRepo"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="GitHub"
+                            android:textSize="13sp"
+                            android:textColor="@color/primary"
+                            android:textStyle="bold"
+                            android:drawableEnd="@drawable/ic_open_in_new"
+                            android:drawablePadding="4dp"
+                            android:drawableTint="@color/primary"/>
                     </LinearLayout>
 
                 </LinearLayout>

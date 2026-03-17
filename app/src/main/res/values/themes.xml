@@ -14,6 +14,11 @@
             对所有 Activity 生效，无需逐 Activity 单独声明。
         -->
         <item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>
+        <!--
+            targetSdk 35+ 会强制应用进入 edge-to-edge 模式，导致内容绘制到状态栏后面。
+            此选项选择退出强制 edge-to-edge，确保内容不会被系统栏遮挡。
+        -->
+        <item name="android:windowOptOutEdgeToEdgeEnforcement">true</item>
     </style>
 
     <!-- 编辑器沉浸主题（继承基础主题，shortEdges 已在基础主题声明）-->

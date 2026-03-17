@@ -13,10 +13,8 @@ import com.localwriter.databinding.FragmentGestureLoginBinding
  * isSetup=true：设置手势密码（注册时使用）
  * isSetup=false：验证手势密码（登录时使用）
  *
- * 手势宫格逻辑：
- * - 3x3 宫格，节点编号 0-8（从左到右，从上到下）
+ * 使用 [GesturePatternView] 显示 3×3 九宫格，通过手指滑动记录路径。
  * - 至少连接 4 个节点才有效
- * - 绘制后自动延迟清除
  */
 class GestureLoginFragment : Fragment() {
 
@@ -26,9 +24,8 @@ class GestureLoginFragment : Fragment() {
     private var userId: Long = 0
     private var isSetup: Boolean = false
 
-    // 手势宫格视图（实际使用第三方 GestureLockView 或自定义 View）
-    // 在真实实现中，这里使用 com.github.ihsanbal.GestureLockView 或自定义
-    private var firstPattern: String? = null  // 用于二次确认
+    /** 设置模式下存储第一次绘制的图案，用于二次确认 */
+    private var firstPattern: String? = null
 
     interface GestureCallback {
         fun onGestureComplete(pattern: String)
@@ -66,58 +63,73 @@ class GestureLoginFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        updateHint()
+
+        // 连接九宫格手势回调
+        binding.gestureLockView.listener = object : GesturePatternView.OnPatternListener {
+            override fun onPatternStarted() {
+                // 开始绘制：清空上一次的提示
+            }
+
+            override fun onPatternComplete(pattern: List<Int>) {
+                val patternStr = pattern.joinToString(separator = "-")
+                onPatternComplete(patternStr)
+            }
+
+            override fun onPatternTooShort() {
+                binding.tvGestureHint.text = "节点不足 $MIN_NODES 个，请重试"
+            }
+        }
+
+        binding.tvSwitchToPassword.setOnClickListener {
+            parentFragmentManager.popBackStack()
+        }
+    }
+
+    private fun updateHint() {
         binding.tvGestureHint.text = when {
             isSetup && firstPattern == null -> "请绘制手势密码（至少连接4个点）"
             isSetup && firstPattern != null -> "请再次绘制确认"
             else                            -> "请绘制手势密码解锁"
         }
-
-        // GestureView 回调（示例：与第三方库集成）
-        // gestureLockView.setOnPatternListener(...)
-        // 在真实代码中连接手势回调，这里用按钮模拟流程说明
-        binding.btnGestureDemo.setOnClickListener {
-            // 在实际实现中，这里是手势宫格的完成回调
-            // 收到节点序列后转为字符串，如 "0-3-6-7-8"
-            onPatternComplete("0-1-2-5-8")
-        }
-
-        binding.tvSwitchToPassword.setOnClickListener {
-            parentFragmentManager.popBackStack()
-            (activity as? AuthActivity)?.let {
-                // 切换回密码登录
-            }
-        }
     }
 
     private fun onPatternComplete(pattern: String) {
-        val nodes = pattern.split("-").size
-        if (nodes < MIN_NODES) {
-            Toast.makeText(context, "节点不足 $MIN_NODES 个，请重试", Toast.LENGTH_SHORT).show()
+        val nodeCount = pattern.split("-").size
+        if (nodeCount < MIN_NODES) {
+            binding.gestureLockView.showError()
+            binding.tvGestureHint.text = "节点不足 $MIN_NODES 个，请重试"
             return
         }
 
         if (isSetup) {
             if (firstPattern == null) {
+                // 第一次：记录，请求二次确认
                 firstPattern = pattern
-                binding.tvGestureHint.text = "请再次绘制确认"
+                binding.gestureLockView.showSuccess()
+                postUpdateHint()
             } else {
+                // 第二次：校验一致性
                 if (firstPattern == pattern) {
+                    binding.gestureLockView.showSuccess()
                     callback?.onGestureComplete(pattern)
-                    Toast.makeText(context, "手势密码设置成功", Toast.LENGTH_SHORT).show()
                 } else {
                     firstPattern = null
+                    binding.gestureLockView.showError()
                     binding.tvGestureHint.text = "两次不一致，请重新绘制"
                     Toast.makeText(context, "两次手势不一致，请重试", Toast.LENGTH_SHORT).show()
+                    postUpdateHint(delayMs = 1200)
                 }
             }
         } else {
-            // 验证模式：通知 ViewModel
-            (activity as? AuthActivity)?.let {
-                (it as? AuthActivity)
-                // ViewModel 中调用 loginWithGesture
-            }
+            // 验证模式：直接通知外层
             callback?.onGestureComplete(pattern)
         }
+    }
+
+    /** 延迟刷新提示文字（等待动画结束）*/
+    private fun postUpdateHint(delayMs: Long = 800) {
+        binding.root.postDelayed({ updateHint() }, delayMs)
     }
 
     override fun onDestroyView() {

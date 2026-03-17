@@ -1,26 +1,79 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 应用前景图标（笔形矢量图） -->
+<!-- 应用前景图标：打开的书 + 钢笔 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- 外圈安全区留白 -->
+
+    <!-- 安全区：18dp 内边距，实际绘制区 72×72 -->
     <group android:translateX="18" android:translateY="18">
-        <!-- 笔身 -->
+
+        <!-- ===== 书本主体 ===== -->
+        <!-- 左页（稍微向左倾斜） -->
         <path
             android:fillColor="#FFFFFF"
-            android:pathData="M64,20 L80,36 L36,80 L20,80 L20,64 Z"/>
-        <!-- 笔尖高亮 -->
+            android:pathData="M36,14 L8,20 L8,58 L36,52 Z"/>
+        <!-- 左页内线条（模拟书页行） -->
+        <path
+            android:strokeColor="#E0D5C8"
+            android:strokeWidth="1.5"
+            android:pathData="M12,27 L33,23 M12,33 L33,29 M12,39 L33,35 M12,45 L33,41"/>
+
+        <!-- 右页 -->
+        <path
+            android:fillColor="#FFF9F0"
+            android:pathData="M36,14 L64,20 L64,58 L36,52 Z"/>
+        <!-- 右页内线条 -->
+        <path
+            android:strokeColor="#E0D5C8"
+            android:strokeWidth="1.5"
+            android:pathData="M39,23 L60,27 M39,29 L60,33 M39,35 L60,39 M39,41 L60,45"/>
+
+        <!-- 书脊（中间折线） -->
+        <path
+            android:fillColor="#D7CCC8"
+            android:pathData="M34,13 Q36,12 38,13 L38,53 Q36,54 34,53 Z"/>
+
+        <!-- 底部书页厚度（立体感） -->
+        <path
+            android:fillColor="#BCAAA4"
+            android:pathData="M8,58 L36,52 L36,56 L8,62 Z"/>
+        <path
+            android:fillColor="#D7CCC8"
+            android:pathData="M36,52 L64,58 L64,62 L36,56 Z"/>
+
+        <!-- ===== 钢笔（右上角斜放） ===== -->
+        <!-- 笔身 -->
         <path
             android:fillColor="#FFD54F"
-            android:pathData="M64,20 L80,36 L74,42 L58,26 Z"/>
-        <!-- 笔尾橡皮 -->
-        <path
-            android:fillColor="#EF9A9A"
-            android:pathData="M56,14 L66,14 L66,22 L56,22 Z"
-            android:rotation="45"
+            android:pathData="M55,4 L67,4 L67,8 L55,8 Z"
+            android:rotation="-45"
             android:pivotX="61"
-            android:pivotY="18"/>
+            android:pivotY="6"/>
+        <!-- 笔尖 -->
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M61,18 L57,26 L65,26 Z"
+            android:rotation="-45"
+            android:pivotX="61"
+            android:pivotY="22"/>
+        <!-- 笔夹 -->
+        <path
+            android:strokeColor="#FFA000"
+            android:strokeWidth="1.5"
+            android:pathData="M63,5 L63,7"
+            android:rotation="-45"
+            android:pivotX="63"
+            android:pivotY="6"/>
+
+        <!-- ===== 装饰：小星星（书本右上方） ===== -->
+        <path
+            android:fillColor="#FFD54F"
+            android:pathData="M58,10 L59.5,13 L63,13 L60.5,15 L61.5,18 L58,16 L54.5,18 L55.5,15 L53,13 L56.5,13 Z"
+            android:scaleX="0.45"
+            android:scaleY="0.45"
+            android:translateX="36"
+            android:translateY="-4"/>
     </group>
 </vector>

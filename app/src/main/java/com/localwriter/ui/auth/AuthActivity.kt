@@ -130,8 +130,13 @@ class AuthActivity : AppCompatActivity() {
         binding.tvSwitchToGesture.visibility = View.GONE
         binding.tvSwitchToPassword.visibility = View.VISIBLE
 
-        // 加载手势输入 Fragment
+        // 加载手势输入 Fragment，并设置验证回调
         val fragment = GestureLoginFragment.newInstance(userId, isSetup = false)
+        fragment.callback = object : GestureLoginFragment.GestureCallback {
+            override fun onGestureComplete(pattern: String) {
+                viewModel.loginWithGesture(userId, pattern)
+            }
+        }
         supportFragmentManager.beginTransaction()
             .replace(binding.flGestureContainer.id, fragment)
             .commit()

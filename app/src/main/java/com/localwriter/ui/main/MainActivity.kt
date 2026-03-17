@@ -73,6 +73,10 @@ class MainActivity : AppCompatActivity() {
                 drawer?.openDrawer(binding.navPanelContainer)
             }
         }
+
+        // 手机端：首次打开默认展开书架抽屉，让用户直接看到书籍列表
+        (binding.drawerLayout as? androidx.drawerlayout.widget.DrawerLayout)
+            ?.openDrawer(binding.navPanelContainer)
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {

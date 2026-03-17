@@ -318,6 +318,12 @@ class SettingsActivity : AppCompatActivity() {
             val pInfo = packageManager.getPackageInfo(packageName, 0)
             binding.tvAboutVersion.text = "版本 ${pInfo.versionName}"
         } catch (_: Exception) {}
+
+        binding.llAboutRepo.setOnClickListener {
+            val intent = Intent(Intent.ACTION_VIEW,
+                Uri.parse("https://github.com/RogerXie314/LocalWriter"))
+            startActivity(intent)
+        }
     }
 
     private fun saveBackgroundImage(uri: Uri) {

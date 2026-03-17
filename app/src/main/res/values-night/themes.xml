@@ -4,7 +4,7 @@
     <style name="Theme.LocalWriter" parent="Theme.Material3.DayNight.NoActionBar">
         <item name="colorPrimary">@color/night_primary</item>
         <item name="colorPrimaryContainer">@color/night_primary_container</item>
-        <item name="colorOnPrimaryContainer">@color/night_on_primary_container</item>
+        <item name="colorOnPrimary">@color/night_on_primary_container</item>
         <item name="colorSurface">@color/night_surface</item>
         <item name="colorOnSurface">@color/night_on_surface</item>
         <item name="colorSurfaceVariant">@color/night_surface_variant</item>
@@ -14,6 +14,8 @@
         <item name="android:windowLightStatusBar">false</item>
         <!-- 打孔屏/刘海屏适配（与日间主题保持一致）-->
         <item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>
+        <!-- 退出 targetSdk 35+ 强制 edge-to-edge -->
+        <item name="android:windowOptOutEdgeToEdgeEnforcement">true</item>
     </style>
 
     <!-- 编辑器沉浸主题（shortEdges 已在基础主题声明，无需重复）-->
@@ -28,5 +30,7 @@
         <item name="android:windowLightNavigationBar">false</item>
         <!-- 打孔屏适配 -->
         <item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>
+        <!-- 退出 targetSdk 35+ 强制 edge-to-edge -->
+        <item name="android:windowOptOutEdgeToEdgeEnforcement">true</item>
     </style>
 </resources>
