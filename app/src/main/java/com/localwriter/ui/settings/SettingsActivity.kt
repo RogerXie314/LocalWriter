@@ -57,6 +57,9 @@ class SettingsActivity : AppCompatActivity() {
         )
     }
 
+    /** 正在展示手势设置对话框时，暂停锁定检测，否则 onResume 会误判退出 */
+    private var suppressLockCheck = false
+
     private val pickImageLauncher = registerForActivityResult(
         ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
@@ -367,6 +370,11 @@ class SettingsActivity : AppCompatActivity() {
             .setNegativeButton("取消", null)
             .create()
 
+        // 展示对话框期间暂停锁定检测（Dialog 会导致 Activity onPause/onStop）
+        suppressLockCheck = true
+
+        dialog.setOnDismissListener { suppressLockCheck = false }
+
         // 必须先 show，container 才会被加入 window 层级
         dialog.show()
 
@@ -438,6 +446,7 @@ class SettingsActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        if (suppressLockCheck) return
         if (SessionManager.isLoggedIn(this) && SessionManager.isLocked(this)) {
             startActivity(Intent(this, AuthActivity::class.java).apply {
                 flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP

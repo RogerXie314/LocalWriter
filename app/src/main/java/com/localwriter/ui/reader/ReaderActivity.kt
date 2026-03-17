@@ -7,15 +7,18 @@ import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.util.TypedValue
 import android.view.MenuItem
 import android.view.View
 import android.widget.SeekBar
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import androidx.core.view.updateLayoutParams
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.color.MaterialColors
 import com.localwriter.LocalWriterApp
@@ -67,6 +70,10 @@ class ReaderActivity : AppCompatActivity() {
 
     private val bookmarkHandler = Handler(Looper.getMainLooper())
     private val bookmarkRunnable = Runnable { saveBookmark() }
+
+    /** 翻页模式：0=滚动（默认），1=翻页（横向滑动切章） */
+    private var pageMode: Int = 0
+    private lateinit var flipGestureDetector: android.view.GestureDetector
 
     companion object {
         const val EXTRA_CHAPTER_ID = "reader_chapter_id"
@@ -255,6 +262,46 @@ class ReaderActivity : AppCompatActivity() {
         binding.ibNavNight.setOnClickListener { toggleNightMode() }
         binding.ibNavSettings.setOnClickListener { togglePanel(1) }
 
+        // 翻页模式
+        binding.btnPageScroll.setOnClickListener { setPageMode(0) }
+        binding.btnPageFlip.setOnClickListener   { setPageMode(1) }
+        updatePageModeButtons()
+
+        // 翻页手势检测（翻页模式下横向滑动切章）
+        flipGestureDetector = android.view.GestureDetector(
+            this,
+            object : android.view.GestureDetector.SimpleOnGestureListener() {
+                private val SWIPE_MIN_DISTANCE = 80
+                private val SWIPE_MIN_VELOCITY = 100
+                override fun onSingleTapUp(e: android.view.MotionEvent): Boolean {
+                    toggleBars()
+                    return true
+                }
+                override fun onFling(
+                    e1: android.view.MotionEvent?,
+                    e2: android.view.MotionEvent,
+                    velocityX: Float,
+                    velocityY: Float
+                ): Boolean {
+                    if (pageMode != 1 || e1 == null) return false
+                    val dx = e2.x - e1.x
+                    val dy = e2.y - e1.y
+                    if (Math.abs(dx) > Math.abs(dy) &&
+                        Math.abs(dx) > SWIPE_MIN_DISTANCE &&
+                        Math.abs(velocityX) > SWIPE_MIN_VELOCITY) {
+                        navigateChapter(if (dx < 0) 1 else -1)
+                        return true
+                    }
+                    return false
+                }
+            }
+        )
+        // 将手势检测附加到 scrollView 的触摸事件
+        binding.scrollView.setOnTouchListener { v, event ->
+            val consumed = flipGestureDetector.onTouchEvent(event)
+            if (!consumed) v.onTouchEvent(event) else true
+        }
+
         // 初始化显示状态
         updateSpacingButtonStates()
         updateBgCircles()
@@ -272,6 +319,12 @@ class ReaderActivity : AppCompatActivity() {
         insetsController.show(WindowInsetsCompat.Type.systemBars())
         binding.appBarLayout.visibility         = View.VISIBLE
         binding.bottomControlOverlay.visibility = View.VISIBLE
+        // 恢复 ScrollView 顶部偏移，等待 AppBarLayout 完成布局后取其高度
+        binding.appBarLayout.post {
+            binding.scrollView.updateLayoutParams<androidx.coordinatorlayout.widget.CoordinatorLayout.LayoutParams> {
+                topMargin = binding.appBarLayout.height
+            }
+        }
         updateFontSizeDisplay()
     }
 
@@ -280,6 +333,10 @@ class ReaderActivity : AppCompatActivity() {
         insetsController.hide(WindowInsetsCompat.Type.systemBars())
         binding.appBarLayout.visibility         = View.GONE
         binding.bottomControlOverlay.visibility = View.GONE
+        // 沉浸模式：ScrollView 填满全屏，topMargin=0
+        binding.scrollView.updateLayoutParams<androidx.coordinatorlayout.widget.CoordinatorLayout.LayoutParams> {
+            topMargin = 0
+        }
         hideAllPanels()
     }
 
@@ -378,6 +435,29 @@ class ReaderActivity : AppCompatActivity() {
 
     private fun updateNightButton() {
         binding.tvNightLabel.text = if (nightModeActive) "白天" else "夜间"
+    }
+
+    private fun setPageMode(mode: Int) {
+        pageMode = mode
+        // 滚动模式恢复 ScrollView 的正常滚动（移除 touch 拦截让默认处理）
+        if (mode == 0) {
+            binding.scrollView.setOnTouchListener(null)
+            binding.scrollView.setOnClickListener { toggleBars() }
+        }
+        updatePageModeButtons()
+    }
+
+    private fun updatePageModeButtons() {
+        val colorOn  = com.google.android.material.color.MaterialColors.getColor(
+            binding.root, com.google.android.material.R.attr.colorPrimary)
+        val colorOff = com.google.android.material.color.MaterialColors.getColor(
+            binding.root, com.google.android.material.R.attr.colorOutline)
+        val strokeOn  = android.content.res.ColorStateList.valueOf(colorOn)
+        val strokeOff = android.content.res.ColorStateList.valueOf(colorOff)
+        binding.btnPageScroll.strokeColor = if (pageMode == 0) strokeOn else strokeOff
+        binding.btnPageScroll.setTextColor(if (pageMode == 0) colorOn else colorOff)
+        binding.btnPageFlip.strokeColor   = if (pageMode == 1) strokeOn else strokeOff
+        binding.btnPageFlip.setTextColor(if (pageMode == 1) colorOn else colorOff)
     }
 
     // ─────────────────── UI 辅助 ───────────────────
