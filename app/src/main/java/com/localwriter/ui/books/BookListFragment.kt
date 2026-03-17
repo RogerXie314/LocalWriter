@@ -104,7 +104,10 @@ class BookListFragment : Fragment() {
     /** 打开阅读器，从上次阅读章节继续 */
     private fun openReaderForBook(book: Book) {
         val chapterId = book.lastChapterId
-        if (chapterId <= 0) return
+        if (chapterId <= 0) {
+            Toast.makeText(requireContext(), "暂无阅读记录，请先点入一个章节开始阅读", Toast.LENGTH_SHORT).show()
+            return
+        }
         val intent = Intent(requireContext(), ReaderActivity::class.java).apply {
             putExtra(ReaderActivity.EXTRA_CHAPTER_ID, chapterId)
             putExtra(ReaderActivity.EXTRA_BOOK_ID, book.id)

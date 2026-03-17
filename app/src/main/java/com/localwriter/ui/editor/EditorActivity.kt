@@ -214,10 +214,22 @@ class EditorActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         if (SessionManager.isLoggedIn(this) && SessionManager.isLocked(this)) {
-            startActivity(Intent(this, AuthActivity::class.java).apply {
-                flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
-            })
-            finish()
+            // 先尝试保存未保存的内容，再跳转认证，应对迟延自动保存错过的场景
+            val content = binding.etContent.text?.toString() ?: ""
+            if (chapterId > 0 && content.isNotEmpty()) {
+                lifecycleScope.launch {
+                    try { viewModel.saveContentSync(chapterId, content) } catch (_: Exception) {}
+                    startActivity(Intent(this@EditorActivity, AuthActivity::class.java).apply {
+                        flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+                    })
+                    finish()
+                }
+            } else {
+                startActivity(Intent(this, AuthActivity::class.java).apply {
+                    flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+                })
+                finish()
+            }
         }
     }
 

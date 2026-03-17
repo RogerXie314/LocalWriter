@@ -86,6 +86,10 @@ class GestureLoginFragment : Fragment() {
         binding.tvSwitchToPassword.setOnClickListener {
             switchToPasswordCallback?.invoke()
         }
+        // 设置模式（注册）时不需要切换按钮
+        if (isSetup) {
+            binding.tvSwitchToPassword.visibility = View.GONE
+        }
     }
 
     private fun updateHint() {

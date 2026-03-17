@@ -228,7 +228,7 @@ class SettingsActivity : AppCompatActivity() {
 
         // 选中当前已保存的超时
         val currentMinutes = SessionManager.getLockTimeout(this)
-        val currentIdx = options.indexOfFirst { it.second == currentMinutes }.coerceAtLeast(2)
+        val currentIdx = options.indexOfFirst { it.second == currentMinutes }.let { if (it < 0) 2 else it }
         binding.spinnerLockTimeout.setSelection(currentIdx, false)
 
         binding.spinnerLockTimeout.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
