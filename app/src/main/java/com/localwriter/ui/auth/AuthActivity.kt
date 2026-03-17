@@ -29,6 +29,8 @@ class AuthActivity : AppCompatActivity() {
 
     /** 缓存当前已加载用户 ID，用于切换到手势登录时传参 */
     private var currentUserId: Long = -1L
+    /** 缓存用户名，锁定模式下无需重新输入 */
+    private var currentUsername: String = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         ThemeManager.applyTheme(this)
@@ -65,7 +67,8 @@ class AuthActivity : AppCompatActivity() {
                     }
 
                     val user = state.user
-                    currentUserId = user.id   // 保存 userId 供手势切换使用
+                    currentUserId = user.id
+                    currentUsername = user.username
                     binding.tvUsername.text = "欢迎回来，${user.username}"
 
                     when (user.preferredLockType) {
@@ -131,6 +134,13 @@ class AuthActivity : AppCompatActivity() {
         // 已在密码登录，隐藏"密码登录"入口；显示"手势登录"入口
         binding.tvSwitchToPassword.visibility = View.GONE
         binding.tvSwitchToGesture.visibility = View.VISIBLE
+        // 锁定模式：已知用户身份，隐藏账号输入框并预填，无需再次输入账号
+        if (currentUserId != -1L && currentUsername.isNotEmpty()) {
+            binding.tilUsername.visibility = View.GONE
+            binding.etUsername.setText(currentUsername)
+        } else {
+            binding.tilUsername.visibility = View.VISIBLE
+        }
     }
 
     private fun showGestureLogin(userId: Long) {

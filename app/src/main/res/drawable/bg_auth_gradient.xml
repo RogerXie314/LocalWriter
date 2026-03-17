@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 认证界面渐变背景：深棕色调，左上到右下对角渐变 -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <gradient
+        android:type="linear"
+        android:startColor="#6D4C41"
+        android:centerColor="#5D4037"
+        android:endColor="#3E2723"
+        android:angle="135"/>
+</shape>

@@ -1,203 +1,247 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  认证界面
-  布局分两段：
-    ① 上方品牌区（固定高度，主题色背景，App 名称 + 副标题）
-    ② 下方可滚动区（白卡片内含密码/手势/生物识别三种模式切换）
+  认证界面 - 渐变背景 + 装饰圆形 + 浮动卡片设计
 -->
-<LinearLayout
+<FrameLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:fitsSystemWindows="true"
-    android:background="@color/auth_bg">
+    android:background="@drawable/bg_auth_gradient"
+    android:fitsSystemWindows="true">
 
-    <!-- ① 品牌区 -->
+    <!-- 装饰圆形1：右上角大圆 -->
+    <View
+        android:layout_width="280dp"
+        android:layout_height="280dp"
+        android:background="@drawable/shape_circle_deco"
+        android:layout_gravity="top|end"
+        android:translationX="80dp"
+        android:translationY="-60dp"/>
+
+    <!-- 装饰圆形2：左侧中圆 -->
+    <View
+        android:layout_width="160dp"
+        android:layout_height="160dp"
+        android:background="@drawable/shape_circle_deco"
+        android:layout_gravity="start|center_vertical"
+        android:translationX="-60dp"
+        android:translationY="40dp"/>
+
+    <!-- 装饰圆形3：右下小圆 -->
+    <View
+        android:layout_width="100dp"
+        android:layout_height="100dp"
+        android:background="@drawable/shape_circle_deco"
+        android:layout_gravity="bottom|end"
+        android:translationX="30dp"
+        android:translationY="-120dp"/>
+
+    <!-- 主内容层 -->
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="2"
-        android:orientation="vertical"
-        android:gravity="center"
-        android:background="?attr/colorPrimary"
-        android:paddingBottom="24dp">
+        android:layout_height="match_parent"
+        android:orientation="vertical">
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="LocalWriter"
-            android:textSize="36sp"
-            android:textStyle="bold"
-            android:textColor="@color/white"
-            android:fontFamily="serif"
-            android:layout_marginBottom="6dp"/>
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="本地写作助手"
-            android:textSize="14sp"
-            android:textColor="#B3FFFFFF"/>
-
-    </LinearLayout>
-
-    <!-- ② 表单区（可滚动） -->
-    <ScrollView
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="3"
-        android:fillViewport="true">
-
+        <!--  品牌区（占上方40%） -->
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="0dp"
+            android:layout_weight="2"
             android:orientation="vertical"
-            android:padding="20dp">
+            android:gravity="center"
+            android:paddingBottom="16dp">
 
-            <!-- 卡片：登录内容 -->
-            <com.google.android.material.card.MaterialCardView
+            <!-- App 图标 -->
+            <ImageView
+                android:layout_width="72dp"
+                android:layout_height="72dp"
+                android:src="@mipmap/ic_launcher"
+                android:scaleType="fitCenter"
+                android:layout_marginBottom="12dp"
+                android:contentDescription="LocalWriter"/>
+
+            <!-- 应用名 -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="LocalWriter"
+                android:textSize="32sp"
+                android:textStyle="bold"
+                android:textColor="@color/white"
+                android:fontFamily="serif"
+                android:letterSpacing="0.02"
+                android:layout_marginBottom="6dp"/>
+
+            <!-- 副标题 -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="隐私写作  离线存储"
+                android:textSize="13sp"
+                android:textColor="#CCFFFFFF"
+                android:letterSpacing="0.08"/>
+
+        </LinearLayout>
+
+        <!--  表单卡片区（占下方60%） -->
+        <ScrollView
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="3"
+            android:fillViewport="true">
+
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:cardElevation="4dp"
-                app:cardCornerRadius="16dp"
-                android:layout_marginTop="8dp">
+                android:orientation="vertical"
+                android:paddingHorizontal="20dp"
+                android:paddingTop="4dp"
+                android:paddingBottom="24dp">
 
-                <LinearLayout
+                <com.google.android.material.card.MaterialCardView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="24dp">
+                    app:cardElevation="12dp"
+                    app:cardCornerRadius="24dp"
+                    app:cardBackgroundColor="@color/surface">
 
-                    <ProgressBar
-                        android:id="@+id/progressBar"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_gravity="center"
-                        android:visibility="gone"
-                        android:layout_marginBottom="8dp"/>
-
-                    <!-- 欢迎文字 -->
-                    <TextView
-                        android:id="@+id/tvUsername"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:textSize="17sp"
-                        android:textColor="@color/on_surface"
-                        android:textStyle="bold"
-                        android:gravity="center"
-                        android:layout_marginBottom="20dp"/>
-
-                    <!-- 密码登录区域 -->
-                    <androidx.constraintlayout.widget.ConstraintLayout
-                        android:id="@+id/clPassword"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:visibility="gone">
-
-                        <com.google.android.material.textfield.TextInputLayout
-                            android:id="@+id/tilUsername"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            app:layout_constraintTop_toTopOf="parent"
-                            app:layout_constraintStart_toStartOf="parent"
-                            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
-                            android:hint="用户名">
-                            <com.google.android.material.textfield.TextInputEditText
-                                android:id="@+id/etUsername"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:inputType="text"
-                                android:imeOptions="actionNext"/>
-                        </com.google.android.material.textfield.TextInputLayout>
-
-                        <com.google.android.material.textfield.TextInputLayout
-                            android:id="@+id/tilPassword"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            app:layout_constraintTop_toBottomOf="@id/tilUsername"
-                            app:layout_constraintStart_toStartOf="parent"
-                            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
-                            app:passwordToggleEnabled="true"
-                            android:hint="密码"
-                            android:layout_marginTop="12dp">
-                            <com.google.android.material.textfield.TextInputEditText
-                                android:id="@+id/etPassword"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:inputType="textPassword"
-                                android:imeOptions="actionDone"/>
-                        </com.google.android.material.textfield.TextInputLayout>
-
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btnLogin"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:text="登 录"
-                            android:textSize="16sp"
-                            app:layout_constraintTop_toBottomOf="@id/tilPassword"
-                            app:layout_constraintStart_toStartOf="parent"
-                            android:layout_marginTop="24dp"/>
-
-                    </androidx.constraintlayout.widget.ConstraintLayout>
-
-                    <!-- 手势登录容器 -->
-                    <FrameLayout
-                        android:id="@+id/flGestureContainer"
-                        android:layout_width="match_parent"
-                        android:layout_height="320dp"
-                        android:visibility="gone"/>
-
-                    <!-- 生物识别按钮 -->
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnBiometric"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="使用生物识别解锁"
-                        android:visibility="gone"
-                        android:layout_marginTop="8dp"
-                        style="@style/Widget.Material3.Button.OutlinedButton"/>
-
-                    <!-- 切换登录方式 -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:gravity="center"
-                        android:layout_marginTop="20dp">
+                        android:orientation="vertical"
+                        android:paddingHorizontal="24dp"
+                        android:paddingTop="28dp"
+                        android:paddingBottom="20dp">
 
-                        <TextView
-                            android:id="@+id/tvSwitchToPassword"
+                        <ProgressBar
+                            android:id="@+id/progressBar"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="密码登录"
-                            android:textColor="@color/primary"
-                            android:padding="8dp"
-                            android:visibility="visible"/>
+                            android:layout_gravity="center"
+                            android:visibility="gone"
+                            android:layout_marginBottom="8dp"/>
 
+                        <!-- 欢迎文字 -->
                         <TextView
-                            android:layout_width="wrap_content"
+                            android:id="@+id/tvUsername"
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:text=" | "
-                            android:textColor="@color/text_secondary"
-                            android:paddingTop="8dp"/>
+                            android:textSize="17sp"
+                            android:textColor="@color/on_surface"
+                            android:textStyle="bold"
+                            android:gravity="center"
+                            android:layout_marginBottom="20dp"/>
 
-                        <TextView
-                            android:id="@+id/tvSwitchToGesture"
-                            android:layout_width="wrap_content"
+                        <!-- 密码登录区域 -->
+                        <androidx.constraintlayout.widget.ConstraintLayout
+                            android:id="@+id/clPassword"
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:text="手势登录"
-                            android:textColor="@color/primary"
-                            android:padding="8dp"/>
+                            android:visibility="gone">
+
+                            <com.google.android.material.textfield.TextInputLayout
+                                android:id="@+id/tilUsername"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                app:layout_constraintTop_toTopOf="parent"
+                                app:layout_constraintStart_toStartOf="parent"
+                                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                                android:hint="用户名">
+                                <com.google.android.material.textfield.TextInputEditText
+                                    android:id="@+id/etUsername"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:inputType="text"
+                                    android:imeOptions="actionNext"/>
+                            </com.google.android.material.textfield.TextInputLayout>
+
+                            <com.google.android.material.textfield.TextInputLayout
+                                android:id="@+id/tilPassword"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                app:layout_constraintTop_toBottomOf="@id/tilUsername"
+                                app:layout_constraintStart_toStartOf="parent"
+                                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                                app:passwordToggleEnabled="true"
+                                android:hint="密码"
+                                android:layout_marginTop="12dp">
+                                <com.google.android.material.textfield.TextInputEditText
+                                    android:id="@+id/etPassword"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:inputType="textPassword"
+                                    android:imeOptions="actionDone"/>
+                            </com.google.android.material.textfield.TextInputLayout>
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnLogin"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="登 录"
+                                android:textSize="16sp"
+                                app:layout_constraintTop_toBottomOf="@id/tilPassword"
+                                app:layout_constraintStart_toStartOf="parent"
+                                android:layout_marginTop="24dp"/>
+
+                        </androidx.constraintlayout.widget.ConstraintLayout>
+
+                        <!-- 手势登录容器 -->
+                        <FrameLayout
+                            android:id="@+id/flGestureContainer"
+                            android:layout_width="match_parent"
+                            android:layout_height="300dp"
+                            android:visibility="gone"/>
+
+                        <!-- 生物识别按钮 -->
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnBiometric"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="使用生物识别解锁"
+                            android:visibility="gone"
+                            android:layout_marginTop="8dp"
+                            style="@style/Widget.Material3.Button.OutlinedButton"/>
+
+                        <!-- 切换登录方式 -->
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:gravity="center"
+                            android:layout_marginTop="20dp">
+
+                            <TextView
+                                android:id="@+id/tvSwitchToPassword"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="密码登录"
+                                android:textColor="?attr/colorPrimary"
+                                android:padding="8dp"
+                                android:visibility="visible"/>
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text=" | "
+                                android:textColor="@color/text_secondary"
+                                android:paddingTop="8dp"/>
+
+                            <TextView
+                                android:id="@+id/tvSwitchToGesture"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="手势登录"
+                                android:textColor="?attr/colorPrimary"
+                                android:padding="8dp"/>
+
+                        </LinearLayout>
 
                     </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
 
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
+            </LinearLayout>
+        </ScrollView>
 
-        </LinearLayout>
-    </ScrollView>
-
-</LinearLayout>
-
+    </LinearLayout>
+</FrameLayout>
