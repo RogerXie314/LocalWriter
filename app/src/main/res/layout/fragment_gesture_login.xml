@@ -5,8 +5,11 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:gravity="center"
-    android:padding="24dp">
+    android:gravity="center_horizontal"
+    android:paddingTop="8dp"
+    android:paddingBottom="8dp"
+    android:paddingStart="8dp"
+    android:paddingEnd="8dp">
 
     <TextView
         android:id="@+id/tvGestureHint"
@@ -14,15 +17,16 @@
         android:layout_height="wrap_content"
         android:text="请绘制手势密码"
         android:gravity="center"
-        android:textSize="16sp"
+        android:textSize="15sp"
         android:textColor="@color/on_surface"
-        android:layout_marginBottom="24dp"/>
+        android:layout_marginBottom="12dp"/>
 
-    <!-- 九宫格手势密码视图（自定义 Canvas View）-->
+    <!-- 九宫格：正方形，占满可用宽度 -->
     <com.localwriter.ui.auth.GesturePatternView
         android:id="@+id/gestureLockView"
-        android:layout_width="280dp"
-        android:layout_height="280dp"/>
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"/>
 
     <TextView
         android:id="@+id/tvSwitchToPassword"
@@ -30,7 +34,7 @@
         android:layout_height="wrap_content"
         android:text="使用密码登录"
         android:textColor="@color/primary"
-        android:padding="12dp"
-        android:layout_marginTop="16dp"/>
+        android:padding="10dp"
+        android:layout_marginTop="8dp"/>
 
 </LinearLayout>

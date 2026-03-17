@@ -1,49 +1,40 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  主界面布局
-  手机竖屏：DrawerLayout（左抽屉导航 + 右内容区）
-  宽屏/平板：在 layout-w600dp/activity_main.xml 中使用双栏布局
+  手机主界面布局：单栏，书籍/章节列表直接显示（无抽屉）
+  平板双栏布局见 layout-w600dp/activity_main.xml
 -->
-<androidx.drawerlayout.widget.DrawerLayout
+<LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/drawerLayout"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:orientation="vertical">
 
-    <!-- 主内容区 -->
-    <androidx.coordinatorlayout.widget.CoordinatorLayout
+    <com.google.android.material.appbar.AppBarLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
-
-        <com.google.android.material.appbar.AppBarLayout
+        android:layout_height="wrap_content">
+        <androidx.appcompat.widget.Toolbar
+            android:id="@+id/toolbar"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content">
-            <androidx.appcompat.widget.Toolbar
-                android:id="@+id/toolbar"
-                android:layout_width="match_parent"
-                android:layout_height="?attr/actionBarSize"
-                android:background="@color/primary"
-                app:titleTextColor="@color/white"
-                app:navigationIcon="@drawable/ic_menu"/>
-        </com.google.android.material.appbar.AppBarLayout>
+            android:layout_height="?attr/actionBarSize"
+            android:background="@color/primary"
+            app:titleTextColor="@color/white"/>
+    </com.google.android.material.appbar.AppBarLayout>
 
-        <!-- 内容区（编辑器/欢迎页）-->
-        <FrameLayout
-            android:id="@+id/content_frame"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            app:layout_behavior="@string/appbar_scrolling_view_behavior"/>
-
-    </androidx.coordinatorlayout.widget.CoordinatorLayout>
-
-    <!-- 左侧抽屉导航（书籍+章节列表）-->
+    <!-- 手机主内容区：书籍/章节列表直接呈现 -->
     <FrameLayout
         android:id="@+id/nav_panel_container"
-        android:layout_width="@dimen/nav_panel_width"
-        android:layout_height="match_parent"
-        android:layout_gravity="start"
-        android:background="@color/nav_panel_bg"
-        android:elevation="4dp"/>
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:background="@color/nav_panel_bg"/>
 
-</androidx.drawerlayout.widget.DrawerLayout>
+    <!-- 占位用（平板双栏兼容，手机不展示）-->
+    <FrameLayout
+        android:id="@+id/content_frame"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:visibility="gone"/>
+
+</LinearLayout>
