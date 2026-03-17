@@ -204,6 +204,8 @@ class GesturePatternView @JvmOverloads constructor(
         when (event.action) {
             MotionEvent.ACTION_DOWN -> {
                 reset(animate = false)
+                // 禁止父级（ScrollView 等）拦截后续 MOVE 事件，保证手势滑动不被截断
+                parent?.requestDisallowInterceptTouchEvent(true)
                 val node = findNodeNear(event.x, event.y)
                 if (node >= 0) {
                     selectedNodes.add(node)
@@ -231,6 +233,8 @@ class GesturePatternView @JvmOverloads constructor(
             }
 
             MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                // 恢复父级正常的事件拦截
+                parent?.requestDisallowInterceptTouchEvent(false)
                 isDrawingLine = false
                 if (selectedNodes.isNotEmpty()) {
                     if (selectedNodes.size >= minNodes) {
