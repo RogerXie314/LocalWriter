@@ -645,6 +645,7 @@ class ReaderActivity : AppCompatActivity() {
             activeBgColorIdx >= 0     -> applyBgAndText()
             else -> {
                 binding.tvContent.setTextColor(settings.textColor)
+                binding.tvChapterTitle.setTextColor(settings.textColor)
                 binding.scrollView.setBackgroundColor(settings.backgroundColor)
             }
         }
@@ -663,8 +664,7 @@ class ReaderActivity : AppCompatActivity() {
             (application as LocalWriterApp).settingsRepository.getSettings(userId)
         } ?: return
         binding.tvContent.setTextColor(settings.textColor)
-        binding.tvChapterTitle.setTextColor(
-            getColor(android.R.color.primary_text_light))
+        binding.tvChapterTitle.setTextColor(settings.textColor)
         binding.scrollView.setBackgroundColor(settings.backgroundColor)
     }
 
