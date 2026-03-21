@@ -151,7 +151,41 @@ copies or substantial portions of the Software.
 
 ---
 
-## � 更新日志
+## 📋 更新日志
+
+### v1.3.0（2026-03）
+
+**界面 & 体验**
+
+- 书架重新设计：仿真彩色书皮封面，两列网格排列，书脊深色渐变 + 行间书架横板装饰
+- 默认主题配色从棕色（#5D4037）升级为深墨蓝（#1E3A5F），金色点缀，更具文学气质
+- 阅读器全屏适配打孔/刘海屏：`LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES` + 实时 insets 追踪，首尾行不再被遮挡
+- 翻页不再出现「半行字」：翻页步长改用扣除安全 padding 后的真实视口高度
+- 翻页动画优化：55% 宽度位移 + alpha 淡入淡出（0.25↔1.0），过渡更自然
+
+**Bug 修复**
+
+- 修复注册/登录界面米色背景上出现白色不可见文字（Auth 主题强制使用深色文字，禁用 forceDark 自动反色）
+- 修复设置页「设置手势密码」对话框关闭后秒跳主页（`suppressLockCheck` 重置改为 `postDelayed(400ms)`，规避部分机型对话框触发 onResume 的竞态）
+
+---
+
+### v1.2.0（2026-03）
+
+**Bug 修复**
+
+- 修复左右滑动调用 `navigateChapter()` 而非 `navigatePage()`，导致直接跳章
+- 修复阅读器章节标题颜色未跟随用户文字主题（两处均修正）
+- 修复设置手势密码对话框不显示（`FrameLayout` 容器添加 `minimumHeight=360dp`）
+- 修复注册流程确认手势后未自动跳转到生物识别步骤
+
+**UX 改进**
+
+- 新增翻页滑入动画（水平位移 160ms，加速→减速）
+- 滚动阅读模式下侧边点击不再误触翻页
+- 沉浸模式底部状态栏新增实时阅读进度百分比（`xx% · n/N 章`）
+
+---
 
 ### v1.1.0（2026-03）
 
@@ -178,12 +212,12 @@ copies or substantial portions of the Software.
 
 **工程**
 
-- 新增 GitHub Actions CI 工作流（`build.yml`），推送后自动构建 Debug APK
+- 新增 GitHub Actions CI 工作流（`build.yml`），推送后自动构建 Debug APK 并创建 GitHub Release
 - 修正 `gradle-wrapper.properties` 中的 Gradle 发行包 URL
 
 ---
 
-## �👤 作者
+## 👤 作者
 
 **Roger_xie**
 
