@@ -21,7 +21,7 @@ object ThemeManager {
     )
 
     val themes = listOf(
-        ThemeOption("棕色经典", R.style.Theme_LocalWriter,       0xFF5D4037.toInt()),
+        ThemeOption("深墨蓝", R.style.Theme_LocalWriter,       0xFF1E3A5F.toInt()),
         ThemeOption("深蓝文墨", R.style.Theme_LocalWriter_Blue,  0xFF1565C0.toInt()),
         ThemeOption("翠竹青绿", R.style.Theme_LocalWriter_Green, 0xFF2E7D32.toInt()),
         ThemeOption("深夜暗黑", R.style.Theme_LocalWriter_Dark,  0xFF212121.toInt()),

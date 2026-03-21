@@ -431,6 +431,23 @@ class BookListFragment : Fragment() {
         val ctx = requireContext()
         val filename = getFilename(uri)
 
+        // 预检文件大小（最大支持 100 MB）
+        val fileSizeBytes = try {
+            ctx.contentResolver.query(uri, arrayOf(android.provider.OpenableColumns.SIZE), null, null, null)
+                ?.use { cursor ->
+                    if (cursor.moveToFirst()) cursor.getLong(cursor.getColumnIndexOrThrow(android.provider.OpenableColumns.SIZE))
+                    else 0L
+                } ?: 0L
+        } catch (_: Exception) { 0L }
+
+        val maxBytes = 100L * 1024 * 1024  // 100 MB
+        if (fileSizeBytes > maxBytes) {
+            Toast.makeText(ctx, "文件过大（${fileSizeBytes / 1024 / 1024} MB），最大支持 100 MB", Toast.LENGTH_LONG).show()
+            return
+        }
+
+        val fileSizeLabel = if (fileSizeBytes > 0) "（${String.format("%.1f", fileSizeBytes / 1024.0 / 1024.0)} MB）" else ""
+
         // 1. 进度对话框（用 AlertDialog + ProgressBar，不依赖已废弃的 ProgressDialog）
         val progressBar = ProgressBar(ctx).apply {
             isIndeterminate = true
@@ -438,7 +455,7 @@ class BookListFragment : Fragment() {
         }
         val progressDialog = AlertDialog.Builder(ctx)
             .setTitle("正在解析")
-            .setMessage("《${filename.substringBeforeLast('.')}》")
+            .setMessage("《${filename.substringBeforeLast('.')}》$fileSizeLabel")
             .setView(progressBar)
             .setCancelable(false)
             .create()
@@ -474,6 +491,9 @@ class BookListFragment : Fragment() {
             } catch (e: Exception) {
                 progressDialog.dismiss()
                 Toast.makeText(ctx, "解析失败：${e.message}", Toast.LENGTH_LONG).show()
+            } catch (e: OutOfMemoryError) {
+                progressDialog.dismiss()
+                Toast.makeText(ctx, "文件过大，内存不足，请尝试较小的文件", Toast.LENGTH_LONG).show()
             }
         }
     }

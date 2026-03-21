@@ -39,31 +39,31 @@
                 android:id="@+id/tvChapterTitle"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:paddingTop="28dp"
-                android:paddingBottom="12dp"
-                android:paddingHorizontal="24dp"
-                android:textSize="20sp"
-                android:textStyle="bold"
-                android:gravity="center"
-                android:textColor="?android:attr/textColorPrimary" />
+                android:paddingTop="20dp"
+                android:paddingBottom="8dp"
+                android:paddingHorizontal="20dp"
+                android:textSize="15sp"
+                android:textStyle="normal"
+                android:gravity="start"
+                android:textColor="?android:attr/textColorSecondary" />
 
             <View
                 android:layout_width="match_parent"
                 android:layout_height="1dp"
-                android:layout_marginHorizontal="40dp"
-                android:layout_marginBottom="8dp"
-                android:alpha="0.3"
+                android:layout_marginHorizontal="20dp"
+                android:layout_marginBottom="6dp"
+                android:alpha="0.2"
                 android:background="?android:attr/textColorSecondary" />
 
             <TextView
                 android:id="@+id/tvContent"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:paddingHorizontal="24dp"
-                android:paddingTop="8dp"
+                android:paddingHorizontal="20dp"
+                android:paddingTop="6dp"
                 android:paddingBottom="24dp"
-                android:lineSpacingMultiplier="1.85"
-                android:textSize="18sp"
+                android:lineSpacingMultiplier="1.65"
+                android:textSize="17sp"
                 android:textColor="?android:attr/textColorPrimary"
                 android:textIsSelectable="true"
                 android:letterSpacing="0.02" />
@@ -113,6 +113,14 @@
             android:alpha="0.55" />
 
     </LinearLayout>
+
+    <!-- 仿真翻页覆盖层（翻页动画时置于顶层，动画结束后 GONE） -->
+    <com.localwriter.ui.reader.PageFlipOverlay
+        android:id="@+id/pageFlipOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="gone"
+        android:elevation="8dp" />
 
     <!-- 底部控制面板 -->
     <LinearLayout

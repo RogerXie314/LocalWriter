@@ -2,8 +2,11 @@ package com.localwriter.ui.reader
 
 import android.content.Intent
 import android.content.res.ColorStateList
+import android.graphics.Bitmap
+import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
+import android.animation.ValueAnimator
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -71,7 +74,7 @@ class ReaderActivity : AppCompatActivity() {
     /** 0=无子面板, 1=设置面板, 2=亮度面板 */
     private var activePanel = 0
 
-    private var currentSpacingIdx: Int = 2  // 默认"宽"(1.85x)
+    private var currentSpacingIdx: Int = 1  // 默认"适中"(1.55x)
     private var nightModeActive: Boolean = false
     private var activeBgColorIdx: Int = -1  // -1=跟随用户设置
 
@@ -182,7 +185,7 @@ class ReaderActivity : AppCompatActivity() {
         // 恢复持久化偏好
         val prefs = getSharedPreferences(PREFS_READER, MODE_PRIVATE)
         currentFontSize   = prefs.getFloat(KEY_FONT_SIZE, 18f)
-        currentSpacingIdx = prefs.getInt(KEY_SPACING, 2)
+        currentSpacingIdx = prefs.getInt(KEY_SPACING, 1)
         nightModeActive   = prefs.getBoolean(KEY_NIGHT_MODE, false)
         activeBgColorIdx  = prefs.getInt(KEY_BG_COLOR_IDX, -1)
         pageMode          = prefs.getInt(KEY_PAGE_MODE, 1)
@@ -772,7 +775,13 @@ class ReaderActivity : AppCompatActivity() {
 
             supportActionBar?.title = chapter.title
             binding.tvChapterTitle.text = chapter.title
-            binding.tvContent.text = chapter.content.ifEmpty { "（本章暂无内容）" }
+            // 每段首行添加全角空格缩进（仿真实书籍排版）
+            val indented = chapter.content.ifEmpty { "（本章暂无内容）" }
+                .lines()
+                .joinToString("\n") { line ->
+                    if (line.trim().isNotEmpty()) "\u3000\u3000$line" else line
+                }
+            binding.tvContent.text = indented
             applyFontSize()
             applyCurrentSpacing()
 
@@ -838,35 +847,53 @@ class ReaderActivity : AppCompatActivity() {
      * 翻页模式专用滑入动画：当前页向左/右滑出，新页从反方向滑入。
      * 整个过程在 ScrollView 的 translationX 上操作，不影响实际内容位置。
      */
+    /**
+     * 仿真翻页动画：
+     * 1. 截取当前 ScrollView 可见区域为位图
+     * 2. 跳转到新页面（目标 scrollY）
+     * 3. 用 PageFlipOverlay 在顶层 3D 旋转该位图，模拟书页翻转
+     */
     private fun slideAnimatePage(targetScrollY: Int, direction: Int) {
         if (isPageAnimating) return
         isPageAnimating = true
+
         val sv = binding.scrollView
-        val width = sv.width.toFloat()
-        // 翻页动画：部分宽度位移 + alpha 淡化，模拟书页自然翻转感
-        val slideOut = if (direction > 0) -(width * 0.55f) else (width * 0.55f)
-        val slideIn  = -slideOut
-        val interpolatorOut = android.view.animation.AccelerateInterpolator(1.0f)
-        val interpolatorIn  = android.view.animation.DecelerateInterpolator(1.2f)
-        sv.animate().cancel()
-        sv.animate()
-            .translationX(slideOut)
-            .alpha(0.25f)
-            .setDuration(150L)
-            .setInterpolator(interpolatorOut)
-            .withEndAction {
-                sv.scrollTo(0, targetScrollY)
-                sv.translationX = slideIn
-                sv.alpha = 0.25f
-                sv.animate()
-                    .translationX(0f)
-                    .alpha(1f)
-                    .setDuration(180L)
-                    .setInterpolator(interpolatorIn)
-                    .withEndAction { isPageAnimating = false }
-                    .start()
-            }
-            .start()
+        val overlay = binding.pageFlipOverlay
+
+        // Step 1: 截取当前可见页面
+        val bmp = try {
+            Bitmap.createBitmap(sv.width.coerceAtLeast(1), sv.height.coerceAtLeast(1),
+                Bitmap.Config.RGB_565).also { sv.draw(Canvas(it)) }
+        } catch (e: Exception) {
+            // 截图失败时回退到简单跳转
+            sv.scrollTo(0, targetScrollY)
+            isPageAnimating = false
+            return
+        }
+
+        // Step 2: 立即跳至新位置（位图覆盖在上方，用户不会看到跳转）
+        sv.scrollTo(0, targetScrollY)
+
+        // Step 3: 配置覆盖层并播放翻页动画
+        overlay.frontBitmap  = bmp
+        overlay.flipDirection = direction
+        overlay.flipProgress  = 0f
+        overlay.visibility   = View.VISIBLE
+
+        val animator = ValueAnimator.ofFloat(0f, 1f).apply {
+            duration = 320L
+            interpolator = android.view.animation.AccelerateDecelerateInterpolator()
+            addUpdateListener { overlay.flipProgress = it.animatedValue as Float }
+            addListener(object : android.animation.AnimatorListenerAdapter() {
+                override fun onAnimationEnd(animation: android.animation.Animator) {
+                    overlay.visibility = View.GONE
+                    overlay.frontBitmap?.recycle()
+                    overlay.frontBitmap = null
+                    isPageAnimating = false
+                }
+            })
+        }
+        animator.start()
     }
 
     private fun saveScrollPosition() {

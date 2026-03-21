@@ -76,11 +76,11 @@ object BookImporter {
         filename: String,
         userCharset: String?
     ): ImportResult {
-        val bytes = stream.readBytes()
         val text = if (userCharset != null) {
-            String(bytes, charset(userCharset)).trimBom()
+            stream.bufferedReader(charset(userCharset)).readText().trimBom()
         } else {
-            EncodingDetector.readText(bytes)
+            // 读取全部字节后自动检测编码（中文 GBK/GB18030/UTF-8 均可识别）
+            EncodingDetector.readText(stream)
         }
         val title = filename.substringBeforeLast('.')
         val chapters = ChapterSplitter.split(text, title)

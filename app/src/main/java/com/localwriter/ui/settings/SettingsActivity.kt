@@ -57,8 +57,9 @@ class SettingsActivity : AppCompatActivity() {
         )
     }
 
-    /** 正在展示手势设置对话框时，暂停锁定检测，否则 onResume 会误判退出 */
-    private var suppressLockCheck = false
+    /** 展示手势设置对话框期间，屏蔽锁定检测直到此时间戳（ms）
+     *  使用时间窗口而非布尔值，彻底避免 MIUI/HonorOS 等设备多次 onResume 的竞态问题 */
+    private var suppressLockUntilMs: Long = 0L
 
     private val pickImageLauncher = registerForActivityResult(
         ActivityResultContracts.GetContent()
@@ -380,14 +381,13 @@ class SettingsActivity : AppCompatActivity() {
             .setNegativeButton("取消", null)
             .create()
 
-        // 展示对话框期间暂停锁定检测
-        // 部分设备（MIUI/HONOR 等）AlertDialog.show() 会短暂触发 Activity onPause/onResume，
-        // 使用 postDelayed 确保 onResume 先执行（suppressLockCheck 仍为 true），
-        // 再重置标志，彻底避免竞态导致的"秒跳主页"问题。
-        suppressLockCheck = true
+        // 展示对话框期间暂停锁定检测：30秒时间窗口
+        // 时间戳方案：无论 onResume 触发多少次、何时触发，均无竞态问题。
+        suppressLockUntilMs = System.currentTimeMillis() + 30_000L
 
         dialog.setOnDismissListener {
-            binding.root.postDelayed({ suppressLockCheck = false }, 400)
+            // 对话框关闭后保留2秒缓冲（防止某些 ROM 在 dismiss 后立即回调 onResume）
+            suppressLockUntilMs = System.currentTimeMillis() + 2_000L
         }
 
         // 必须先 show，container 才会被加入 window 层级
@@ -473,7 +473,7 @@ class SettingsActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        if (suppressLockCheck) return
+        if (System.currentTimeMillis() < suppressLockUntilMs) return
         if (SessionManager.isLoggedIn(this) && SessionManager.isLocked(this)) {
             startActivity(Intent(this, AuthActivity::class.java).apply {
                 flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
