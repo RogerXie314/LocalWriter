@@ -153,7 +153,7 @@ copies or substantial portions of the Software.
 
 ## 📋 更新日志
 
-### v1.5.0（2026-03）
+### v1.6.0（2026-03）
 
 **阅读器**
 
