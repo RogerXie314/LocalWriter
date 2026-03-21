@@ -74,6 +74,28 @@ class ReaderActivity : AppCompatActivity() {
     private val bookmarkHandler = Handler(Looper.getMainLooper())
     private val bookmarkRunnable = Runnable { saveBookmark() }
 
+    private val autoHideHandler = Handler(Looper.getMainLooper())
+    private val autoHideRunnable = Runnable { if (activePanel == 0) hideBars() }
+    private val AUTO_HIDE_DELAY = 4_000L
+    private val ANIM_DURATION = 240L
+
+    /** 每分钟刷新沉浸模式时间显示 */
+    private val timeRefreshHandler = Handler(Looper.getMainLooper())
+    private val timeRefreshRunnable: Runnable = object : Runnable {
+        override fun run() {
+            if (!barsVisible) updateImmersiveInfo()
+            timeRefreshHandler.postDelayed(this, 60_000L)
+        }
+    }
+
+    /** 动态获取操作栏高度，用于工具栏入场动画偏移量 */
+    private val actionBarHeight: Int by lazy {
+        val tv = android.util.TypedValue()
+        if (theme.resolveAttribute(android.R.attr.actionBarSize, tv, true))
+            android.util.TypedValue.complexToDimensionPixelSize(tv.data, resources.displayMetrics)
+        else (56 * resources.displayMetrics.density).toInt()
+    }
+
     /** 翻页模式：0=滚动，1=翻页（默认，左右点击区域翻页） */
     private var pageMode: Int = 1
     private lateinit var flipGestureDetector: android.view.GestureDetector
@@ -157,6 +179,9 @@ class ReaderActivity : AppCompatActivity() {
         // 默认进入沉浸模式
         hideBars()
         loadBookChapters()
+
+        // 启动每分钟刷新时间的定时器
+        timeRefreshHandler.postDelayed(timeRefreshRunnable, 60_000L)
     }
 
     override fun onResume() {
@@ -186,6 +211,8 @@ class ReaderActivity : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         bookmarkHandler.removeCallbacks(bookmarkRunnable)
+        autoHideHandler.removeCallbacks(autoHideRunnable)
+        timeRefreshHandler.removeCallbacks(timeRefreshRunnable)
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
@@ -193,6 +220,24 @@ class ReaderActivity : AppCompatActivity() {
             R.id.action_chapter_list -> { showChapterListDialog(); true }
             R.id.action_edit_chapter -> { openEditor(); true }
             else -> super.onOptionsItemSelected(item)
+        }
+    }
+
+    /** 音量键翻页：音量下键 = 下一页，音量上键 = 上一页 */
+    override fun onKeyDown(keyCode: Int, event: android.view.KeyEvent?): Boolean {
+        return when (keyCode) {
+            android.view.KeyEvent.KEYCODE_VOLUME_DOWN -> { navigatePage(1); true }
+            android.view.KeyEvent.KEYCODE_VOLUME_UP   -> { navigatePage(-1); true }
+            else -> super.onKeyDown(keyCode, event)
+        }
+    }
+
+    /** 消费音量键 Up 事件，防止系统同时调节音量 */
+    override fun onKeyUp(keyCode: Int, event: android.view.KeyEvent?): Boolean {
+        return when (keyCode) {
+            android.view.KeyEvent.KEYCODE_VOLUME_DOWN,
+            android.view.KeyEvent.KEYCODE_VOLUME_UP -> true
+            else -> super.onKeyUp(keyCode, event)
         }
     }
 
@@ -220,6 +265,9 @@ class ReaderActivity : AppCompatActivity() {
                 val gestureHandled = flipGestureDetector.onTouchEvent(ev)
                 if (gestureHandled) return true   // 手势已处理（点击/滑动），阻止子 View 重复处理
                 if (pageMode == 1) return true    // 翻页模式：阻止 ScrollView 滚动
+            } else if (inPanel && barsVisible && ev.action == android.view.MotionEvent.ACTION_DOWN) {
+                // 用户操作控制面板时重置自动隐藏计时器
+                resetAutoHideTimer()
             }
         }
         return super.dispatchTouchEvent(ev)
@@ -350,27 +398,79 @@ class ReaderActivity : AppCompatActivity() {
     private fun showBars() {
         barsVisible = true
         insetsController.show(WindowInsetsCompat.Type.systemBars())
-        binding.appBarLayout.visibility         = View.VISIBLE
-        binding.bottomControlOverlay.visibility = View.VISIBLE
-        // 恢复 ScrollView 顶部偏移，等待 AppBarLayout 完成布局后取其高度
+
+        // 工具栏从顶部滑入
+        binding.appBarLayout.apply {
+            val startY = -(height.takeIf { it > 0 } ?: actionBarHeight).toFloat()
+            alpha = 0f
+            translationY = startY
+            visibility = View.VISIBLE
+            animate().alpha(1f).translationY(0f).setDuration(ANIM_DURATION).start()
+        }
+        // 工具栏布局完成后恢复 ScrollView 顶部偏移
         binding.appBarLayout.post {
             binding.scrollView.updateLayoutParams<androidx.coordinatorlayout.widget.CoordinatorLayout.LayoutParams> {
                 topMargin = binding.appBarLayout.height
             }
         }
+
+        // 底部控制面板从底部滑入
+        binding.bottomControlOverlay.apply {
+            alpha = 0f
+            visibility = View.VISIBLE
+            post {
+                translationY = height.toFloat()
+                animate().alpha(1f).translationY(0f).setDuration(ANIM_DURATION).start()
+            }
+        }
+
+        // 隐藏沉浸模式状态栏
+        binding.immersiveStatusBar.visibility = View.GONE
+
         updateFontSizeDisplay()
+        resetAutoHideTimer()
     }
 
     private fun hideBars() {
         barsVisible = false
+        autoHideHandler.removeCallbacks(autoHideRunnable)
         insetsController.hide(WindowInsetsCompat.Type.systemBars())
-        binding.appBarLayout.visibility         = View.GONE
-        binding.bottomControlOverlay.visibility = View.GONE
-        // 沉浸模式：ScrollView 填满全屏，topMargin=0
-        binding.scrollView.updateLayoutParams<androidx.coordinatorlayout.widget.CoordinatorLayout.LayoutParams> {
-            topMargin = 0
+
+        // 工具栏滑出到顶部
+        if (binding.appBarLayout.visibility == View.VISIBLE && binding.appBarLayout.height > 0) {
+            binding.appBarLayout.animate()
+                .alpha(0f).translationY(-binding.appBarLayout.height.toFloat())
+                .setDuration(ANIM_DURATION)
+                .withEndAction {
+                    binding.appBarLayout.visibility = View.GONE
+                    binding.scrollView.updateLayoutParams<androidx.coordinatorlayout.widget.CoordinatorLayout.LayoutParams> {
+                        topMargin = 0
+                    }
+                }.start()
+        } else {
+            binding.appBarLayout.visibility = View.GONE
+            binding.scrollView.updateLayoutParams<androidx.coordinatorlayout.widget.CoordinatorLayout.LayoutParams> {
+                topMargin = 0
+            }
         }
-        hideAllPanels()
+
+        // 底部控制面板滑出到底部
+        if (binding.bottomControlOverlay.visibility == View.VISIBLE && binding.bottomControlOverlay.height > 0) {
+            binding.bottomControlOverlay.animate()
+                .alpha(0f).translationY(binding.bottomControlOverlay.height.toFloat())
+                .setDuration(ANIM_DURATION)
+                .withEndAction {
+                    binding.bottomControlOverlay.visibility = View.GONE
+                    hideAllPanels()
+                }.start()
+        } else {
+            binding.bottomControlOverlay.visibility = View.GONE
+            hideAllPanels()
+        }
+
+        // 显示沉浸模式状态栏
+        binding.immersiveStatusBar.visibility = View.VISIBLE
+        updateImmersiveInfo()
     }
 
     // ─────────────────── 子面板切换 ───────────────────
@@ -380,10 +480,13 @@ class ReaderActivity : AppCompatActivity() {
             activePanel = 0
             binding.panelSettings.visibility   = View.GONE
             binding.panelBrightness.visibility = View.GONE
+            resetAutoHideTimer()
         } else {
             activePanel = id
             binding.panelSettings.visibility   = if (id == 1) View.VISIBLE else View.GONE
             binding.panelBrightness.visibility = if (id == 2) View.VISIBLE else View.GONE
+            // 子面板打开时暂停自动隐藏，防止用户操作被打断
+            autoHideHandler.removeCallbacks(autoHideRunnable)
         }
     }
 
@@ -490,6 +593,33 @@ class ReaderActivity : AppCompatActivity() {
 
     // ─────────────────── UI 辅助 ───────────────────
 
+    /** 重置自动隐藏计时器（主流阅读 App 交互：控制栏显示后 4 秒无操作自动隐藏） */
+    private fun resetAutoHideTimer() {
+        autoHideHandler.removeCallbacks(autoHideRunnable)
+        if (activePanel == 0) {
+            autoHideHandler.postDelayed(autoHideRunnable, AUTO_HIDE_DELAY)
+        }
+    }
+
+    /** 更新沉浸模式底部状态栏（章节进度 + 当前时间），颜色跟随正文主题 */
+    private fun updateImmersiveInfo() {
+        val total = allChapterIds.size
+        binding.tvImmersiveProgress.text = if (total > 0)
+            "${currentIndex + 1} / $total 章"
+        else
+            "-- / -- 章"
+        val cal = java.util.Calendar.getInstance()
+        binding.tvImmersiveTime.text = String.format(
+            java.util.Locale.getDefault(), "%02d:%02d",
+            cal.get(java.util.Calendar.HOUR_OF_DAY),
+            cal.get(java.util.Calendar.MINUTE)
+        )
+        // 文字颜色跟随当前阅读主题，确保与背景形成对比
+        val textColor = binding.tvContent.currentTextColor
+        binding.tvImmersiveProgress.setTextColor(textColor)
+        binding.tvImmersiveTime.setTextColor(textColor)
+    }
+
     private fun applyFontSize() {
         if (currentFontSize > 0f) binding.tvContent.textSize = currentFontSize
     }
@@ -587,6 +717,7 @@ class ReaderActivity : AppCompatActivity() {
             binding.scrollView.post { binding.scrollView.scrollTo(0, scrollY) }
             updateBookmarkIndicator()
             updateFontSizeDisplay()
+            if (!barsVisible) updateImmersiveInfo()
 
             withContext(Dispatchers.IO) {
                 (application as LocalWriterApp).bookRepository.updateLastChapter(bookId, chapId)
