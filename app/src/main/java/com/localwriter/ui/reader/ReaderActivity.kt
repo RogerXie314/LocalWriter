@@ -79,6 +79,9 @@ class ReaderActivity : AppCompatActivity() {
     private val AUTO_HIDE_DELAY = 4_000L
     private val ANIM_DURATION = 240L
 
+    /** 翻页动画进行中时屏蔽重复触发 */
+    private var isPageAnimating = false
+
     /** 每分钟刷新沉浸模式时间显示 */
     private val timeRefreshHandler = Handler(Looper.getMainLooper())
     private val timeRefreshRunnable: Runnable = object : Runnable {
@@ -172,6 +175,8 @@ class ReaderActivity : AppCompatActivity() {
                 bookmarkHandler.removeCallbacks(bookmarkRunnable)
                 bookmarkHandler.postDelayed(bookmarkRunnable, 800)
             }
+            // 沉浸模式下实时更新阅读进度百分比
+            if (!barsVisible) updateImmersiveInfo()
         }
 
         setupBottomControls()
@@ -356,10 +361,16 @@ class ReaderActivity : AppCompatActivity() {
                 override fun onSingleTapUp(e: android.view.MotionEvent): Boolean {
                     val width = binding.scrollView.width.toFloat()
                     val x = e.x
+                    if (pageMode == 0) {
+                        // 滚动模式：仅中间区域呼出/隐藏工具栏，侧边点击不翻页（保留自由滚动体验）
+                        if (x in (width / 3f)..(width * 2f / 3f)) toggleBars()
+                        return true
+                    }
+                    // 翻页模式：左 1/3 = 上一页，右 1/3 = 下一页，中间 = 工具栏
                     when {
-                        x < width / 3f  -> navigatePage(-1)   // 左区：向前翻页
-                        x > width * 2f / 3f -> navigatePage(1) // 右区：向后翻页
-                        else            -> toggleBars()         // 中间区：呼出/隐藏工具栏
+                        x < width / 3f      -> navigatePage(-1)
+                        x > width * 2f / 3f -> navigatePage(1)
+                        else                -> toggleBars()
                     }
                     return true
                 }
@@ -602,13 +613,23 @@ class ReaderActivity : AppCompatActivity() {
         }
     }
 
-    /** 更新沉浸模式底部状态栏（章节进度 + 当前时间），颜色跟随正文主题 */
+    /** 更新沉浸模式底部状态栏（阅读进度% + 章节进度 + 当前时间），颜色跟随正文主题 */
     private fun updateImmersiveInfo() {
         val total = allChapterIds.size
-        binding.tvImmersiveProgress.text = if (total > 0)
-            "${currentIndex + 1} / $total 章"
-        else
-            "-- / -- 章"
+        val chapterText = if (total > 0) "${currentIndex + 1}/$total 章" else "-/-"
+
+        // 计算章节内滚动百分比
+        val child = binding.scrollView.getChildAt(0)
+        val progressText = if (child != null) {
+            val maxScroll = (child.height - binding.scrollView.height).coerceAtLeast(1)
+            val pct = ((binding.scrollView.scrollY.toFloat() / maxScroll) * 100)
+                .toInt().coerceIn(0, 100)
+            "$pct%"
+        } else ""
+
+        binding.tvImmersiveProgress.text =
+            if (progressText.isNotEmpty()) "$progressText · $chapterText" else chapterText
+
         val cal = java.util.Calendar.getInstance()
         binding.tvImmersiveTime.text = String.format(
             java.util.Locale.getDefault(), "%02d:%02d",
@@ -737,8 +758,9 @@ class ReaderActivity : AppCompatActivity() {
     }
 
     /**
-     * 翻页导航：按屏幕高度滚动。
-     * direction > 0 = 向后翻页；direction < 0 = 向前翻页。
+     * 翻页导航：按屏幕高度滚动/翻页。
+     * direction > 0 = 向后；direction < 0 = 向前。
+     * 翻页模式下带水平滑入动画；滚动模式下仍用 smoothScrollTo。
      * 已到末尾/开头时切换到下一章/上一章。
      */
     private fun navigatePage(direction: Int) {
@@ -752,15 +774,50 @@ class ReaderActivity : AppCompatActivity() {
             if (currentY >= maxScroll - SCROLL_TOLERANCE) {
                 navigateChapter(1)
             } else {
-                sv.smoothScrollTo(0, (currentY + pageHeight).coerceAtMost(maxScroll))
+                val targetY = (currentY + pageHeight).coerceAtMost(maxScroll)
+                if (pageMode == 1) slideAnimatePage(targetY, direction)
+                else sv.smoothScrollTo(0, targetY)
             }
         } else {
             if (currentY <= SCROLL_TOLERANCE) {
                 navigateChapter(-1)
             } else {
-                sv.smoothScrollTo(0, (currentY - pageHeight).coerceAtLeast(0))
+                val targetY = (currentY - pageHeight).coerceAtLeast(0)
+                if (pageMode == 1) slideAnimatePage(targetY, direction)
+                else sv.smoothScrollTo(0, targetY)
             }
         }
+    }
+
+    /**
+     * 翻页模式专用滑入动画：当前页向左/右滑出，新页从反方向滑入。
+     * 整个过程在 ScrollView 的 translationX 上操作，不影响实际内容位置。
+     */
+    private fun slideAnimatePage(targetScrollY: Int, direction: Int) {
+        if (isPageAnimating) return
+        isPageAnimating = true
+        val sv = binding.scrollView
+        val width = sv.width.toFloat()
+        val slideOut = if (direction > 0) -width else width
+        val slideIn  = -slideOut
+        val interpolatorOut = android.view.animation.AccelerateInterpolator(1.2f)
+        val interpolatorIn  = android.view.animation.DecelerateInterpolator(1.2f)
+        sv.animate().cancel()
+        sv.animate()
+            .translationX(slideOut)
+            .setDuration(160L)
+            .setInterpolator(interpolatorOut)
+            .withEndAction {
+                sv.scrollTo(0, targetScrollY)
+                sv.translationX = slideIn
+                sv.animate()
+                    .translationX(0f)
+                    .setDuration(160L)
+                    .setInterpolator(interpolatorIn)
+                    .withEndAction { isPageAnimating = false }
+                    .start()
+            }
+            .start()
     }
 
     private fun saveScrollPosition() {

@@ -367,7 +367,12 @@ class SettingsActivity : AppCompatActivity() {
 
         // 先创建容器和对话框，show() 之后再加 Fragment（否则 container 不在 window 层级里）
         val containerId = android.view.View.generateViewId()
-        val container = android.widget.FrameLayout(this).also { it.id = containerId }
+        // 设置最小高度，确保 GesturePatternView（weight=1）有足够空间渲染九宫格
+        val minHeightPx = (360 * resources.displayMetrics.density).toInt()
+        val container = android.widget.FrameLayout(this).also {
+            it.id = containerId
+            it.minimumHeight = minHeightPx
+        }
 
         val dialog = AlertDialog.Builder(this)
             .setTitle("设置手势密码")

@@ -135,6 +135,8 @@ class RegisterActivity : AppCompatActivity() {
                                 authRepo.setGesturePattern(newUserId, pattern)
                                 gestureSaved = true
                                 Toast.makeText(this@RegisterActivity, "手势密码已保存", Toast.LENGTH_SHORT).show()
+                                // 自动进入下一步
+                                showStep(STEP_BIOMETRIC)
                             }
                         }
                     }
