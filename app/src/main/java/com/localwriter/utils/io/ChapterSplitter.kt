@@ -99,12 +99,17 @@ object ChapterSplitter {
                 // ─── 正文 ─────────────────────────────────────────
                 else -> {
                     if (foundChapter) {
-                        if (currentContent.isNotEmpty() || trimmed.isNotEmpty()) {
+                        if (trimmed.isNotEmpty()) {
                             currentContent.append(trimmed).append("\n")
+                        } else if (currentContent.isNotEmpty() && !currentContent.endsWith("\n\n")) {
+                            // 最多保留一个空行，避免多个连续空行造成大段空白
+                            currentContent.append("\n")
                         }
                     } else {
-                        if (prefaceContent.isNotEmpty() || trimmed.isNotEmpty()) {
+                        if (trimmed.isNotEmpty()) {
                             prefaceContent.append(trimmed).append("\n")
+                        } else if (prefaceContent.isNotEmpty() && !prefaceContent.endsWith("\n\n")) {
+                            prefaceContent.append("\n")
                         }
                     }
                 }
@@ -126,7 +131,26 @@ object ChapterSplitter {
             result.add(SplitChapter(bookTitle, text.trim(), null))
         }
 
-        return result
+        // ── 后处理：合并内容过短（< 80字）的章节到上一章 ─────────────────
+        // 避免错误地把编号列表行（如"1. 走进大厅"）当作章节标题
+        val cleaned = mutableListOf<SplitChapter>()
+        for (ch in result) {
+            val len = ch.content.trim().length
+            if (len < 80 && cleaned.isNotEmpty()) {
+                // 将此章的标题和内容并入上一章末尾
+                val prev = cleaned.last()
+                val appended = buildString {
+                    append(prev.content.trimEnd())
+                    if (ch.title.isNotEmpty()) append("\n${ch.title}")
+                    if (ch.content.trim().isNotEmpty()) append("\n${ch.content.trim()}")
+                }
+                cleaned[cleaned.size - 1] = prev.copy(content = appended)
+            } else {
+                cleaned.add(ch)
+            }
+        }
+
+        return cleaned.ifEmpty { listOf(SplitChapter(bookTitle, text.trim(), null)) }
     }
 
     private fun isChapterTitle(line: String): Boolean {

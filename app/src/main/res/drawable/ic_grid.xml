@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 书架列数切换图标：三列小方格 -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!-- 列1 -->
+    <path android:fillColor="#FFFFFFFF"
+        android:pathData="M2,3 L8,3 L8,21 L2,21 Z"/>
+    <!-- 列2 -->
+    <path android:fillColor="#FFFFFFFF"
+        android:pathData="M10,3 L14,3 L14,21 L10,21 Z"/>
+    <!-- 列3 -->
+    <path android:fillColor="#FFFFFFFF"
+        android:pathData="M16,3 L22,3 L22,21 L16,21 Z"/>
+</vector>

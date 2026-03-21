@@ -56,6 +56,17 @@
                     android:textSize="11sp"/>
             </LinearLayout>
 
+            <!-- 列数切换 -->
+            <ImageButton
+                android:id="@+id/ibGridSize"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:src="@drawable/ic_grid"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:tint="@color/white"
+                android:padding="5dp"
+                android:contentDescription="切换列数"/>
+
             <!-- 排序切换 -->
             <ImageButton
                 android:id="@+id/ibSortBooks"

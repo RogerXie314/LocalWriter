@@ -111,13 +111,36 @@ class BookListFragment : Fragment() {
             onItemLongClick = { book, anchorView -> showBookMenu(book, anchorView) },
             onContinueRead = { book -> openReaderForBook(book) }
         )
+        // 读取已保存的列数（默认 3 列）
+        val savedColumns = requireContext()
+            .getSharedPreferences("localwriter_prefs", android.content.Context.MODE_PRIVATE)
+            .getInt("shelf_columns", 3)
+        applyGridColumns(savedColumns)
         binding.rvBooks.apply {
-            // 书架网格：2列，每本书像真实书脊/封面横排摆放
-            layoutManager = GridLayoutManager(context, 2)
             adapter = this@BookListFragment.adapter
-            // 书架隔层装饰线
             addItemDecoration(ShelfDecoration(context))
         }
+        binding.ibGridSize.setOnClickListener { cycleGridColumns() }
+    }
+
+    /** 循环切换书架列数：2 → 3 → 4 → 2 */
+    private fun cycleGridColumns() {
+        val current = (binding.rvBooks.layoutManager as? GridLayoutManager)?.spanCount ?: 3
+        val next = when (current) {
+            2    -> 3
+            3    -> 4
+            else -> 2
+        }
+        applyGridColumns(next)
+        requireContext()
+            .getSharedPreferences("localwriter_prefs", android.content.Context.MODE_PRIVATE)
+            .edit().putInt("shelf_columns", next).apply()
+        Toast.makeText(requireContext(), "${next}列显示", Toast.LENGTH_SHORT).show()
+    }
+
+    private fun applyGridColumns(columns: Int) {
+        binding.rvBooks.layoutManager = GridLayoutManager(context, columns)
+        adapter.setSpanCount(columns)
     }
 
     /** 打开阅读器，从上次阅读章节继续 */

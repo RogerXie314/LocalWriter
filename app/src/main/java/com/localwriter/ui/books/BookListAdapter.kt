@@ -16,6 +16,14 @@ class BookListAdapter(
     private val onContinueRead: (Book) -> Unit = {}
 ) : ListAdapter<Book, BookListAdapter.BookViewHolder>(DiffCallback) {
 
+    /** 当前列数；由 Fragment 通过 setSpanCount() 设置 */
+    var spanCount: Int = 3
+
+    fun setSpanCount(n: Int) {
+        spanCount = n
+        notifyItemRangeChanged(0, itemCount)
+    }
+
     inner class BookViewHolder(
         private val binding: ItemBookBinding
     ) : RecyclerView.ViewHolder(binding.root) {
@@ -73,6 +81,16 @@ class BookListAdapter(
 
     override fun onBindViewHolder(holder: BookViewHolder, position: Int) {
         holder.bind(getItem(position))
+        // 根据列数动态调整卡片高度，保持 2:3 书籍比例
+        val density = holder.itemView.resources.displayMetrics.density
+        val heightDp = when (spanCount) {
+            4    -> 120
+            3    -> 155
+            else -> 220  // 2 列
+        }
+        holder.itemView.layoutParams = holder.itemView.layoutParams.also {
+            it.height = (heightDp * density + 0.5f).toInt()
+        }
     }
 
     companion object DiffCallback : DiffUtil.ItemCallback<Book>() {

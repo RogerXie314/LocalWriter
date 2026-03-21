@@ -19,7 +19,6 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
-import androidx.core.view.updateLayoutParams
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -434,7 +433,11 @@ class ReaderActivity : AppCompatActivity() {
         barsVisible = true
         insetsController.show(WindowInsetsCompat.Type.systemBars())
 
-        // 工具栏从顶部滑入
+        // 记录当前 padding 和 scrollY，后面补偿，保证内容视觉位置不变
+        val prevPaddingTop = binding.scrollView.paddingTop
+        val prevScrollY    = binding.scrollView.scrollY
+
+        // 工具栏从顶部滑入（覆盖在 scrollView 上方，不推挤内容）
         binding.appBarLayout.apply {
             val startY = -(height.takeIf { it > 0 } ?: actionBarHeight).toFloat()
             alpha = 0f
@@ -442,10 +445,16 @@ class ReaderActivity : AppCompatActivity() {
             visibility = View.VISIBLE
             animate().alpha(1f).translationY(0f).setDuration(ANIM_DURATION).start()
         }
-        // 工具栏布局完成后恢复 ScrollView 顶部偏移
+        // 工具栏布局完成后：将 paddingTop 设置为工具栏完整高度，
+        // 同时按差值调整 scrollY，使屏幕上可见的文字行保持原位。
         binding.appBarLayout.post {
-            binding.scrollView.updateLayoutParams<androidx.coordinatorlayout.widget.CoordinatorLayout.LayoutParams> {
-                topMargin = binding.appBarLayout.height
+            val toolbarH = binding.appBarLayout.height.takeIf { it > 0 }
+                ?: (actionBarHeight + systemStatusBarHeight)
+            val delta = toolbarH - prevPaddingTop
+            binding.scrollView.apply {
+                clipToPadding = false   // 背景延伸到工具栏背后，增加层次感
+                setPadding(0, toolbarH, 0, 0)
+                if (delta != 0) scrollTo(0, (prevScrollY + delta).coerceAtLeast(0))
             }
         }
 
@@ -457,12 +466,6 @@ class ReaderActivity : AppCompatActivity() {
                 translationY = height.toFloat()
                 animate().alpha(1f).translationY(0f).setDuration(ANIM_DURATION).start()
             }
-        }
-
-        // 显示系统栏后，清除沉浸模式下的安全 padding（AppBarLayout 的 fitsSystemWindows=true 会处理顶部）
-        binding.scrollView.apply {
-            clipToPadding = true
-            setPadding(0, 0, 0, 0)
         }
 
         // 隐藏沉浸模式状态栏
@@ -477,6 +480,10 @@ class ReaderActivity : AppCompatActivity() {
         autoHideHandler.removeCallbacks(autoHideRunnable)
         insetsController.hide(WindowInsetsCompat.Type.systemBars())
 
+        // 记录当前 padding 和 scrollY（工具栏消失后再补偿）
+        val snapshotPaddingTop = binding.scrollView.paddingTop
+        val snapshotScrollY    = binding.scrollView.scrollY
+
         // 工具栏滑出到顶部
         if (binding.appBarLayout.visibility == View.VISIBLE && binding.appBarLayout.height > 0) {
             binding.appBarLayout.animate()
@@ -484,17 +491,11 @@ class ReaderActivity : AppCompatActivity() {
                 .setDuration(ANIM_DURATION)
                 .withEndAction {
                     binding.appBarLayout.visibility = View.GONE
-                    binding.scrollView.updateLayoutParams<androidx.coordinatorlayout.widget.CoordinatorLayout.LayoutParams> {
-                        topMargin = 0
-                    }
-                    applyImmersivePadding()
+                    applyImmersivePaddingCompensated(snapshotPaddingTop, snapshotScrollY)
                 }.start()
         } else {
             binding.appBarLayout.visibility = View.GONE
-            binding.scrollView.updateLayoutParams<androidx.coordinatorlayout.widget.CoordinatorLayout.LayoutParams> {
-                topMargin = 0
-            }
-            applyImmersivePadding()
+            applyImmersivePaddingCompensated(snapshotPaddingTop, snapshotScrollY)
         }
 
         // 底部控制面板滑出到底部
@@ -517,19 +518,32 @@ class ReaderActivity : AppCompatActivity() {
     }
 
     /**
-     * 沉浸模式下为 scrollView 加上安全内边距：
+     * 沉浸模式下为 scrollView 加上安全内边距，并补偿 scrollY 使可见文字不跳动：
      * - paddingTop  = 状态栏/刘海高度 → 首行文字不被摄像头遮挡
      * - paddingBottom = 导航栏高度    → 末行文字不被圆角/手势区遮挡
+     * - scrollY 按 (prevPaddingTop - newPaddingTop) 补偿，视觉位置不变
      * clipToPadding=false 确保背景色仍绘制到屏幕边缘，不留白条。
      */
-    private fun applyImmersivePadding() {
-        val top = if (systemStatusBarHeight > 0) systemStatusBarHeight else
-            (resources.displayMetrics.density * 24 + 0.5f).toInt()  // 24dp fallback
+    private fun applyImmersivePaddingCompensated(prevPaddingTop: Int, prevScrollY: Int) {
+        val top = if (systemStatusBarHeight > 0) systemStatusBarHeight
+                  else (resources.displayMetrics.density * 24 + 0.5f).toInt()
         val bot = if (systemNavBarHeight > 0) systemNavBarHeight else 0
+        // 仅在从"工具栏显示"切换到沉浸时才补偿（prevPaddingTop 大于 top 才有意义）
+        val newScrollY = if (prevPaddingTop > top) {
+            (prevScrollY - (prevPaddingTop - top)).coerceAtLeast(0)
+        } else {
+            prevScrollY
+        }
         binding.scrollView.apply {
             clipToPadding = false
             setPadding(0, top, 0, bot)
+            scrollTo(0, newScrollY)
         }
+    }
+
+    private fun applyImmersivePadding() {
+        // 初始进入沉浸模式，无需补偿 scrollY（章节加载后会独立设置 scrollY）
+        applyImmersivePaddingCompensated(0, 0)
     }
 
     // ─────────────────── 子面板切换 ───────────────────
