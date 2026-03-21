@@ -375,7 +375,8 @@ class ReaderActivity : AppCompatActivity() {
                     if (Math.abs(dx) > Math.abs(dy) &&
                         Math.abs(dx) > SWIPE_MIN_DISTANCE &&
                         Math.abs(velocityX) > SWIPE_MIN_VELOCITY) {
-                        navigateChapter(if (dx < 0) 1 else -1)
+                        // 左滑=向后翻页，右滑=向前翻页；翻到章节末尾/开头时自动切章
+                        navigatePage(if (dx < 0) 1 else -1)
                         return true
                     }
                     return false
