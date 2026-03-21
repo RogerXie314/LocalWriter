@@ -159,12 +159,25 @@ copies or substantial portions of the Software.
 
 - 修复点击中间呼出/隐藏控制条时，文字内容跳动的问题：改为 `paddingTop + scrollY` 联动补偿方案（AppBar 覆盖在 ScrollView 上方而非推挤，切换时 scrollY 同步等差补偿，视觉内容位置完全不变）
 - 底部控制栏改为覆盖式，不再压缩正文显示区域
+- 沉浸模式优化：顶部显示小字章节标题覆盖层，paddingTop/Bottom 留出与系统栏等量 + 额外呼吸空间，参考主流阅读 App 体验
+- 翻页动画重构：去掉 Camera/Matrix 3D 翻转（原动画结束时有黑帧闪烁），改为 `translationX` 水平滑动（200ms DecelerateInterpolator），过渡自然无闪
+- 底部控制面板颜色跟随阅读皮肤：背景、导航图标、标签文字均与当前阅读背景色联动（白纸/米黄/暖灰/豆绿/夜间），不再固定使用 Material 主题表面色
+- 修复大体积 TXT 导入后闪退：SQLite 批量 insert 超过 999 变量上限 → 改为 `chunked(75)` 分批写入（13字段×75=975 < 999）
+
+**手势密码**
+
+- 修复设置手势密码时操作完毕跳回书架：根本原因是 `Fragment` 被添加到 `Dialog` 窗口，与 `supportFragmentManager` 管理的 Activity 窗口层级不同，改为 `layoutInflater.inflate` 直接嵌入 Dialog，所有手势逻辑内联实现，彻底摆脱 FragmentManager
 
 **书架**
 
 - 书架封面改为默认 3 列（原来 2 列），更多书一screen显示
 - 新增列数切换按钮（工具栏网格图标）：循环切换 2/3/4 列，选择记忆持久化
 - 卡片高度自动跟随列数适配（2列=220dp，3列=155dp，4列=120dp）
+- 修复 3/4 列模式下卡片内容重叠：4列隐藏作者名/字数/续读按钮，3列隐藏续读按钮，2列全显示；修复 `tvWordCount` margin 和 `btnContinueRead` 锚点
+
+**删除书籍**
+
+- 删除确认弹窗去掉输入书名验证，改为一步简单确认，降低误操作门槛（数据有回收站保护）
 
 **APK 发布**
 
