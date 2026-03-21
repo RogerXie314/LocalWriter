@@ -58,7 +58,7 @@
 ### 环境要求
 
 - **Android Studio** Hedgehog 或更高版本（含 JDK 17）
-- **Android SDK** API 26–34
+- **Android SDK** API 26–36
 
 ### 克隆 & 构建
 
