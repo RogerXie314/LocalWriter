@@ -27,7 +27,7 @@ class BookListAdapter(
         private val binding: ItemBookBinding
     ) : RecyclerView.ViewHolder(binding.root) {
 
-        fun bind(book: Book) {
+        fun bind(book: Book, spanCount: Int = 3) {
             binding.tvBookTitle.text = book.title
             binding.tvBookAuthor.text = if (book.author.isNotBlank()) book.author else "未署名"
             binding.tvWordCount.text = formatWordCount(book.wordCount)
@@ -59,11 +59,37 @@ class BookListAdapter(
             }
             binding.btnMore.setOnClickListener { onItemLongClick(book, it) }
 
-            if (book.lastChapterId > 0) {
+            // 继续阅读按钮：仅在 2 列大图模式且有阅读记录时显示
+            if (spanCount <= 2 && book.lastChapterId > 0) {
                 binding.btnContinueRead.visibility = View.VISIBLE
                 binding.btnContinueRead.setOnClickListener { onContinueRead(book) }
             } else {
                 binding.btnContinueRead.visibility = View.GONE
+            }
+
+            // 根据列数调整文字大小和次要信息可见性，防止内容遮挡
+            when (spanCount) {
+                4 -> {
+                    // 最小模式 (120dp)：只显示书名+状态标签
+                    binding.tvBookTitle.maxLines = 2
+                    binding.tvBookTitle.textSize = 12f
+                    binding.tvBookAuthor.visibility = View.GONE
+                    binding.tvWordCount.visibility  = View.GONE
+                }
+                3 -> {
+                    // 中等模式 (155dp)：书名+作者+字数，不显示继续阅读
+                    binding.tvBookTitle.maxLines = 3
+                    binding.tvBookTitle.textSize = 13f
+                    binding.tvBookAuthor.visibility = View.VISIBLE
+                    binding.tvWordCount.visibility  = View.VISIBLE
+                }
+                else -> {
+                    // 大图模式 (220dp)：显示全部
+                    binding.tvBookTitle.maxLines = 5
+                    binding.tvBookTitle.textSize = 14f
+                    binding.tvBookAuthor.visibility = View.VISIBLE
+                    binding.tvWordCount.visibility  = View.VISIBLE
+                }
             }
         }
 
@@ -79,7 +105,7 @@ class BookListAdapter(
     }
 
     override fun onBindViewHolder(holder: BookViewHolder, position: Int) {
-        holder.bind(getItem(position))
+        holder.bind(getItem(position), spanCount)
         // 根据列数动态调整卡片高度，保持 2:3 书籍比例
         val density = holder.itemView.resources.displayMetrics.density
         val heightDp = when (spanCount) {

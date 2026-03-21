@@ -89,23 +89,23 @@
                 android:maxLines="1"
                 android:ellipsize="end"/>
 
-            <!-- 字数（底部最下行，继续阅读按钮上方） -->
+            <!-- 字数（底部最下行） -->
             <TextView
                 android:id="@+id/tvWordCount"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_alignParentBottom="true"
-                android:layout_marginBottom="24dp"
+                android:layout_marginBottom="4dp"
                 android:textSize="9sp"
                 android:textColor="#99FFFFFF"/>
 
-            <!-- 继续阅读（有阅读记录时显示） -->
+            <!-- 继续阅读（有阅读记录且 2 列模式显示，位于字数上方） -->
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnContinueRead"
                 style="@style/Widget.Material3.Button.TextButton"
                 android:layout_width="wrap_content"
                 android:layout_height="28dp"
-                android:layout_alignParentBottom="true"
+                android:layout_above="@id/tvWordCount"
                 android:layout_alignParentStart="true"
                 android:paddingHorizontal="0dp"
                 android:text="▶ 继续阅读"

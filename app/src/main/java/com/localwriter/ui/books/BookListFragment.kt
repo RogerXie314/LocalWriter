@@ -305,39 +305,12 @@ class BookListFragment : Fragment() {
     // ─────────────────── 删除 ───────────────────
 
     private fun showDeleteConfirm(book: Book) {
-        val ctx = requireContext()
-        val dp8 = (8 * resources.displayMetrics.density).toInt()
-
-        val etConfirm = EditText(ctx).apply {
-            hint = "请输入书名以确认"
-            setSingleLine()
-        }
-        val container = LinearLayout(ctx).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(dp8 * 3, dp8, dp8 * 3, dp8)
-            addView(etConfirm)
-        }
-
-        val dialog = AlertDialog.Builder(ctx)
+        AlertDialog.Builder(requireContext())
             .setTitle("删除书籍")
-            .setMessage("此操作将删除《${book.title}》的全部章节且不可恢复！\n请输入书名「${book.title}」以确认：")
-            .setView(container)
-            .setPositiveButton("删除", null)   // 先设置 null，后面手动处理防止自动关闭
+            .setMessage("确定删除《${book.title}》？\n此操作将删除全部章节，不可恢复。")
+            .setPositiveButton("删除") { _, _ -> viewModel.deleteBook(book) }
             .setNegativeButton("取消", null)
-            .create()
-
-        dialog.setOnShowListener {
-            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
-                val input = etConfirm.text.toString().trim()
-                if (input == book.title) {
-                    viewModel.deleteBook(book)
-                    dialog.dismiss()
-                } else {
-                    etConfirm.error = "书名不匹配"
-                }
-            }
-        }
-        dialog.show()
+            .show()
     }
 
     // ─────────────────── 导出 ───────────────────

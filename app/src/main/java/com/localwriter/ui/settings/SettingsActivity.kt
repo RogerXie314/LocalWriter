@@ -362,52 +362,70 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     /** 设置手势密码 */
+    /** 设置手势密码（直接嵌入视图，不走 FragmentManager，避免 Dialog 窗口与
+     *  Activity 窗口分离导致的 "No view found for id" 崩溃，修复回到书架的 bug） */
     private fun showSetGestureDialog() {
         val userId = SessionManager.getUserId(this)
         if (userId == -1L) { toast("请先登录"); return }
 
-        // 先创建容器和对话框，show() 之后再加 Fragment（否则 container 不在 window 层级里）
-        val containerId = android.view.View.generateViewId()
-        // 设置最小高度，确保 GesturePatternView（weight=1）有足够空间渲染九宫格
-        val minHeightPx = (360 * resources.displayMetrics.density).toInt()
-        val container = android.widget.FrameLayout(this).also {
-            it.id = containerId
-            it.minimumHeight = minHeightPx
-        }
+        // 直接 inflate 手势视图，不通过 supportFragmentManager
+        val gestureView = layoutInflater.inflate(R.layout.fragment_gesture_login, null, false)
+        val patternView = gestureView.findViewById<com.localwriter.ui.auth.GesturePatternView>(R.id.gestureLockView)
+        val tvHint      = gestureView.findViewById<android.widget.TextView>(R.id.tvGestureHint)
+        val tvSwitch    = gestureView.findViewById<android.widget.TextView>(R.id.tvSwitchToPassword)
+        tvSwitch.visibility = View.GONE
+        tvHint.text = "请绘制手势密码（至少连接4个点）"
+
+        var firstPattern: String? = null
 
         val dialog = AlertDialog.Builder(this)
             .setTitle("设置手势密码")
-            .setView(container)
+            .setView(gestureView)
             .setNegativeButton("取消", null)
             .create()
 
         // 展示对话框期间暂停锁定检测：30秒时间窗口
-        // 时间戳方案：无论 onResume 触发多少次、何时触发，均无竞态问题。
         suppressLockUntilMs = System.currentTimeMillis() + 30_000L
-
         dialog.setOnDismissListener {
-            // 对话框关闭后保留2秒缓冲（防止某些 ROM 在 dismiss 后立即回调 onResume）
             suppressLockUntilMs = System.currentTimeMillis() + 2_000L
         }
 
-        // 必须先 show，container 才会被加入 window 层级
-        dialog.show()
-
-        val fragment = GestureLoginFragment.newInstance(userId, isSetup = true)
-        fragment.callback = object : GestureLoginFragment.GestureCallback {
-            override fun onGestureComplete(pattern: String) {
-                lifecycleScope.launch {
-                    val repo = (application as LocalWriterApp).authRepository
-                    repo.setGesturePattern(userId, pattern)
-                    dialog.dismiss()
-                    toast("手势密码已设置")
+        patternView.listener = object : com.localwriter.ui.auth.GesturePatternView.OnPatternListener {
+            override fun onPatternStarted() {}
+            override fun onPatternTooShort() {
+                tvHint.text = "节点不足4个，请重试"
+            }
+            override fun onPatternComplete(pattern: List<Int>) {
+                val patternStr = pattern.joinToString("-")
+                if (pattern.size < GestureLoginFragment.MIN_NODES) {
+                    patternView.showError()
+                    tvHint.text = "节点不足4个，请重试"
+                    return
+                }
+                if (firstPattern == null) {
+                    // 第一次绘制：记录，等待二次确认
+                    firstPattern = patternStr
+                    patternView.showSuccess()
+                    tvHint.postDelayed({ tvHint.text = "请再次绘制确认" }, 800)
+                } else if (firstPattern == patternStr) {
+                    // 两次一致：保存
+                    patternView.showSuccess()
+                    lifecycleScope.launch {
+                        (application as LocalWriterApp).authRepository
+                            .setGesturePattern(userId, patternStr)
+                        dialog.dismiss()
+                        toast("手势密码已设置")
+                    }
+                } else {
+                    // 两次不一致：重来
+                    firstPattern = null
+                    patternView.showError()
+                    tvHint.postDelayed({ tvHint.text = "两次不一致，请重新绘制" }, 800)
                 }
             }
         }
 
-        supportFragmentManager.beginTransaction()
-            .replace(containerId, fragment)
-            .commitAllowingStateLoss()
+        dialog.show()
     }
 
     private fun observeSettings() {

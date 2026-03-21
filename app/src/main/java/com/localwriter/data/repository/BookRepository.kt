@@ -131,7 +131,11 @@ class BookRepository(
             }
         }
 
-        chapterDao.insertAll(allChapters)
+        // 分批插入，避免 SQLite SQLITE_MAX_VARIABLE_NUMBER(999) 限制
+        // 13 个字段 × 75 章 = 975 < 999，安全批量大小
+        allChapters.chunked(75).forEach { chunk ->
+            chapterDao.insertAll(chunk)
+        }
         val total = allChapters.sumOf { it.wordCount }
         bookDao.updateWordCount(bookId, total)
         return bookId
