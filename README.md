@@ -9,6 +9,7 @@
 [![Language](https://img.shields.io/badge/Language-Kotlin-orange?logo=kotlin)](https://kotlinlang.org)
 [![Architecture](https://img.shields.io/badge/Architecture-MVVM-purple)](https://developer.android.com/topic/architecture)
 [![License](https://img.shields.io/badge/License-MIT-lightgrey)](LICENSE)
+[![Build Debug APK](https://github.com/RogerXie314/LocalWriter/actions/workflows/build.yml/badge.svg)](https://github.com/RogerXie314/LocalWriter/actions/workflows/build.yml)
 
 </div>
 
@@ -48,7 +49,7 @@
 | 安全 | EncryptedSharedPreferences (AES256-GCM)，BiometricPrompt，SHA-256 + 随机盐 |
 | 异步 | kotlinx.coroutines 1.7.3，LiveData |
 | 导入导出 | epublib-core · Apache POI · iTextPDF · Jsoup · juniversalchardet |
-| Min / Target SDK | 26 / 34 |
+| Min / Target SDK | 26 / 36 |
 
 ---
 
@@ -150,7 +151,39 @@ copies or substantial portions of the Software.
 
 ---
 
-## 👤 作者
+## � 更新日志
+
+### v1.1.0（2026-03）
+
+**Bug 修复**
+
+- 修复阅读器退出后重新打开无法恢复滚动位置（新增 `lastScrollPos` 字段，Room DB 迁移 v1→v2）
+- 修复生物识别验证时 userId 硬编码为 1 导致多账号下认证失败
+- 修复 `SUM()` 在无章节时返回 NULL 引发 NPE 崩溃
+- 修复九宫格手势 `postDelayed` 未取消导致的内存泄漏与状态混乱
+- 修复锁屏按钮点击后未跳转至认证界面
+- 修复词数统计遗漏 CJK 扩展 B 区汉字
+- 修复 IME 中文输入法连续输入时触发过多撤销记录（新增 400ms 合并阈值）
+- 修复编辑器字体大小初始为 0 导致的短暂闪烁
+- 修复手势锁设置界面旋转屏幕后第一次图案丢失
+
+**UX 改进**
+
+- 卷标题背景改用 `?attr/colorSurfaceVariant`，正确支持深色模式
+- 启用阅读器目录底部弹层的「书签」与「笔记」标签页（笔记功能开发中提示）
+- 修复认证界面初次加载时「切换方式」文字闪现
+- 编辑器保存失败时增加 Toast 提示
+- 修复设置页生物识别开关状态未从数据库读取
+- 修复锁定超时下拉框监听器注册顺序错误导致设置被意外重置
+
+**工程**
+
+- 新增 GitHub Actions CI 工作流（`build.yml`），推送后自动构建 Debug APK
+- 修正 `gradle-wrapper.properties` 中的 Gradle 发行包 URL
+
+---
+
+## �👤 作者
 
 **Roger_xie**
 

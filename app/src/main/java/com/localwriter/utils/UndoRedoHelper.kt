@@ -24,6 +24,10 @@ class UndoRedoHelper(private val editText: EditText) {
     private var lastBefore: CharSequence = ""
     private val maxHistorySize = 200
 
+    /** 上次记录动作的时间戳（毫秒），用于 IME 组合字符去抖 */
+    private var lastActionTime = 0L
+    private val MERGE_THRESHOLD_MS = 400L
+
     private val watcher = object : TextWatcher {
         override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {
             if (!isUndoRedo) {
@@ -35,7 +39,25 @@ class UndoRedoHelper(private val editText: EditText) {
         override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
             if (!isUndoRedo) {
                 val after = s.subSequence(start, start + count)
-                undoStack.push(EditAction(lastStart, lastBefore, after))
+                val now = System.currentTimeMillis()
+                // 对快速连续输入（如拼音 IME 组合或连续标点）尝试合并到上一个 action，
+                // 避免一个"汉字"产生多个 undo 步骤。合并条件：
+                //   1. 时间间隔 < MERGE_THRESHOLD_MS
+                //   2. 本次是纯插入（before=0）且上一次也是纯插入（before.isEmpty）
+                //   3. 文本位置连续（上一次末尾 = 本次开始）
+                val last = if (undoStack.isNotEmpty()) undoStack.peek() else null
+                val canMerge = last != null
+                    && (now - lastActionTime) < MERGE_THRESHOLD_MS
+                    && before == 0 && last.before.isEmpty()
+                    && last.start + last.after.length == start
+                if (canMerge && last != null) {
+                    undoStack.pop()
+                    undoStack.push(EditAction(last.start, last.before,
+                        last.after.toString() + after))
+                } else {
+                    undoStack.push(EditAction(lastStart, lastBefore, after))
+                }
+                lastActionTime = now
                 redoStack.clear()
                 if (undoStack.size > maxHistorySize) {
                     undoStack.removeLast()

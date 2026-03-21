@@ -100,6 +100,9 @@ class GesturePatternView @JvmOverloads constructor(
     private var outerRingRadius = 0f
     private var hitRadius       = 0f
 
+    /** 用于 postDelayed 的具名 Runnable，确保可被 removeCallbacks 精确取消 */
+    private val resetRunnable = Runnable { reset() }
+
     // ─── 监听器 ─────────────────────────────────────────────────────────────
 
     interface OnPatternListener {
@@ -274,14 +277,16 @@ class GesturePatternView @JvmOverloads constructor(
     fun showError() {
         state = State.ERROR
         invalidate()
-        postDelayed({ reset() }, 1000)
+        removeCallbacks(resetRunnable)
+        postDelayed(resetRunnable, 1000)
     }
 
-    /** 显示成功（变绿，1 秒后自动重置）*/
+    /** 显示成功（变绿，700ms 后自动重置）*/
     fun showSuccess() {
         state = State.SUCCESS
         invalidate()
-        postDelayed({ reset() }, 700)
+        removeCallbacks(resetRunnable)
+        postDelayed(resetRunnable, 700)
     }
 
     /** 获取当前路径（节点索引列表，"0-1-2-…" 格式字符串）*/

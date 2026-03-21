@@ -23,6 +23,7 @@ import com.localwriter.data.db.entity.Book
 import com.localwriter.databinding.FragmentBookListBinding
 import com.localwriter.databinding.DialogEditTitleBinding
 import com.localwriter.ui.chapters.ChapterListFragment
+import com.localwriter.ui.auth.AuthActivity
 import com.localwriter.ui.reader.ReaderActivity
 import com.localwriter.ui.settings.SettingsActivity
 import com.localwriter.utils.SessionManager
@@ -97,6 +98,9 @@ class BookListFragment : Fragment() {
         }
         binding.ibLock.setOnClickListener {
             SessionManager.lock(requireContext())
+            startActivity(Intent(requireContext(), AuthActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+            })
             requireActivity().finish()
         }
     }

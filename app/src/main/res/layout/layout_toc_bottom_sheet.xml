@@ -78,7 +78,6 @@
                 android:text="笔记"
                 android:textSize="14sp"
                 android:padding="0dp"
-                android:enabled="false"
                 app:cornerRadius="20dp"
                 app:strokeColor="@android:color/transparent" />
 
@@ -92,7 +91,6 @@
                 android:text="书签"
                 android:textSize="14sp"
                 android:padding="0dp"
-                android:enabled="false"
                 app:cornerRadius="20dp"
                 app:strokeColor="@android:color/transparent" />
         </LinearLayout>

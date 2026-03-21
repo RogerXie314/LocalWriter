@@ -84,6 +84,10 @@ class ChapterRepository(
         chapterDao.updateCursorPos(chapterId, pos)
     }
 
+    suspend fun saveScrollPos(chapterId: Long, pos: Int) {
+        chapterDao.updateScrollPos(chapterId, pos)
+    }
+
     fun observeDeletedChapters(bookId: Long): LiveData<List<Chapter>> =
         chapterDao.observeDeletedByBook(bookId)
 

@@ -45,5 +45,5 @@ interface BookDao {
     suspend fun search(userId: Long, query: String): List<Book>
 
     @Query("SELECT SUM(wordCount) FROM books WHERE userId = :userId")
-    suspend fun totalWordCount(userId: Long): Int
+    suspend fun totalWordCount(userId: Long): Int?
 }

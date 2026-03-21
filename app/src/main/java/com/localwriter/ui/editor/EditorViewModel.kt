@@ -98,7 +98,9 @@ class EditorViewModel(
         var inEnglishWord = false
         for (ch in text) {
             when {
-                ch.code in 0x4E00..0x9FFF || ch.code in 0x3400..0x4DBF -> {
+                ch.code in 0x4E00..0x9FFF ||   // CJK统一汉字
+                ch.code in 0x3400..0x4DBF ||   // CJK扩展A
+                ch.code in 0x20000..0x2A6DF -> {// CJK扩展B（与 ChapterRepository 保持一致）
                     if (inEnglishWord) { count++; inEnglishWord = false }
                     count++
                 }

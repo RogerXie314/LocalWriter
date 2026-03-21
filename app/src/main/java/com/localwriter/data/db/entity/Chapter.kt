@@ -46,6 +46,8 @@ data class Chapter(
     val wordCount: Int = 0,
     /** 上次编辑光标位置，下次打开时恢复 */
     val lastCursorPos: Int = 0,
+    /** 上次阅读滚动位置（像素 Y 值），与编辑光标位置分开存储 */
+    val lastScrollPos: Int = 0,
     val sortOrder: Int = 0,
     val createdAt: Long = System.currentTimeMillis(),
     val updatedAt: Long = System.currentTimeMillis(),
