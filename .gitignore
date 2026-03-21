@@ -24,3 +24,6 @@
 # Build logs and temporary debug scripts (auto-generated during CI/local debugging)
 build_*.txt
 do_build*.bat
+
+*.apk
+dist_v*/
