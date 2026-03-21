@@ -26,9 +26,17 @@
         <item name="android:windowFullscreen">false</item>
     </style>
 
-    <!-- 认证界面（温暖米色背景）-->
+    <!-- 认证界面（温暖米色背景）
+         强制浅色文字方案：auth_bg 是固定米色，不随系统深色模式变化，
+         必须始终使用深色文字以确保可见性。 -->
     <style name="Theme.LocalWriter.Auth" parent="Theme.LocalWriter">
         <item name="android:windowBackground">@color/auth_bg</item>
+        <!-- 强制深色文字 -->
+        <item name="android:textColorPrimary">@color/on_surface</item>
+        <item name="android:textColorSecondary">@color/text_secondary</item>
+        <item name="android:textColorHint">@color/text_secondary</item>
+        <!-- 禁止系统自动深色变换（API 29+），避免白底转黑后米色背景上出现白字 -->
+        <item name="android:forceDarkAllowed">false</item>
     </style>
 
     <!-- ── 主题皮肤变体 ─────────────────────────────────────────── -->

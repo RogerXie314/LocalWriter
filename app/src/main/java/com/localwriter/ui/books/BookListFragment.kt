@@ -16,7 +16,7 @@ import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.lifecycleScope
-import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.GridLayoutManager
 import com.localwriter.LocalWriterApp
 import com.localwriter.R
 import com.localwriter.data.db.entity.Book
@@ -112,8 +112,11 @@ class BookListFragment : Fragment() {
             onContinueRead = { book -> openReaderForBook(book) }
         )
         binding.rvBooks.apply {
-            layoutManager = LinearLayoutManager(context)
+            // 书架网格：2列，每本书像真实书脊/封面横排摆放
+            layoutManager = GridLayoutManager(context, 2)
             adapter = this@BookListFragment.adapter
+            // 书架隔层装饰线
+            addItemDecoration(ShelfDecoration(context))
         }
     }
 
@@ -521,6 +524,57 @@ class BookListFragment : Fragment() {
             } catch (e: Exception) {
                 Toast.makeText(ctx, "保存失败：${e.message}", Toast.LENGTH_LONG).show()
             }
+        }
+    }
+}
+
+// ─────────────────── 书架隔层装饰 ───────────────────
+
+/**
+ * 在网格书架每行下方绘制一条"书架横板"，营造真实书架的层次感。
+ */
+private class ShelfDecoration(context: android.content.Context) :
+    androidx.recyclerview.widget.RecyclerView.ItemDecoration() {
+
+    private val shelfPaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+        // 书架横板颜色：使用主色的深色变体，与书脊颜色协调
+        color = BookListAdapter.darken(BookListAdapter.coverColorFor("shelf"), 0.6f)
+            .let {
+                // 稍微叠加暖木色调
+                android.graphics.Color.argb(
+                    200,
+                    (android.graphics.Color.red(it) + 20).coerceAtMost(255),
+                    (android.graphics.Color.green(it) + 10).coerceAtMost(255),
+                    android.graphics.Color.blue(it)
+                )
+            }
+    }
+    private val shelfH = (context.resources.displayMetrics.density * 8 + 0.5f).toInt()  // 8dp
+    private val SPAN = 2
+
+    override fun getItemOffsets(
+        outRect: android.graphics.Rect,
+        view: android.view.View,
+        parent: androidx.recyclerview.widget.RecyclerView,
+        state: androidx.recyclerview.widget.RecyclerView.State
+    ) {
+        outRect.bottom = shelfH
+    }
+
+    override fun onDraw(
+        c: android.graphics.Canvas,
+        parent: androidx.recyclerview.widget.RecyclerView,
+        state: androidx.recyclerview.widget.RecyclerView.State
+    ) {
+        for (i in 0 until parent.childCount) {
+            val view = parent.getChildAt(i) ?: continue
+            c.drawRect(
+                0f,
+                view.bottom.toFloat(),
+                parent.width.toFloat(),
+                view.bottom.toFloat() + shelfH,
+                shelfPaint
+            )
         }
     }
 }

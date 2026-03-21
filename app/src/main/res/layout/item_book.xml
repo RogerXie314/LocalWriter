@@ -1,112 +1,119 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 书籍列表项 -->
+<!--
+  书架 - 书籍封面卡片
+  外观：仿真书皮，色彩丰富，含书脊、书名、作者、状态标签。
+  固定高度 220dp，在主流手机两列网格中接近 2:3 书籍比例。
+-->
 <com.google.android.material.card.MaterialCardView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/cardBook"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:layout_marginHorizontal="10dp"
+    android:layout_height="220dp"
+    android:layout_marginHorizontal="7dp"
     android:layout_marginVertical="5dp"
-    app:cardCornerRadius="12dp"
-    app:cardElevation="2dp"
+    app:cardCornerRadius="5dp"
+    app:cardElevation="6dp"
     app:strokeWidth="0dp">
 
+    <!-- 整体水平：书脊（左） + 封面内容（右） -->
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="match_parent"
         android:orientation="horizontal">
 
-        <!-- 左侧书脊色条 -->
+        <!-- ── 书脊装饰条（半透明暗色） ── -->
         <View
-            android:layout_width="4dp"
+            android:id="@+id/viewSpine"
+            android:layout_width="10dp"
             android:layout_height="match_parent"
-            android:background="?attr/colorPrimary"/>
+            android:background="#33000000"/>
 
-        <!-- 右侧内容区域 -->
-        <LinearLayout
+        <!-- ── 封面主内容 ── -->
+        <RelativeLayout
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
+            android:layout_height="match_parent"
             android:layout_weight="1"
-            android:orientation="vertical"
-            android:paddingStart="14dp"
-            android:paddingEnd="8dp"
-            android:paddingTop="12dp"
-            android:paddingBottom="10dp">
+            android:padding="10dp">
 
-            <!-- 书名 + 状态标签 + 菜单 -->
-            <LinearLayout
+            <!-- 状态标签（右上角） -->
+            <TextView
+                android:id="@+id/tvStatus"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentTop="true"
+                android:layout_alignParentEnd="true"
+                android:textSize="8sp"
+                android:textColor="@color/white"
+                android:paddingHorizontal="5dp"
+                android:paddingVertical="2dp"
+                android:maxLines="1"/>
+
+            <!-- 更多操作（状态标签下方） -->
+            <ImageButton
+                android:id="@+id/btnMore"
+                android:layout_width="28dp"
+                android:layout_height="28dp"
+                android:layout_below="@id/tvStatus"
+                android:layout_alignParentEnd="true"
+                android:layout_marginTop="2dp"
+                android:src="@drawable/ic_more_vert"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:tint="#CCFFFFFF"
+                android:padding="2dp"
+                android:contentDescription="更多操作"/>
+
+            <!-- 书名（垂直居中），左边预留空间让标题不压按钮 -->
+            <TextView
+                android:id="@+id/tvBookTitle"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical">
+                android:layout_centerVertical="true"
+                android:layout_marginEnd="32dp"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:textColor="@color/white"
+                android:lineSpacingMultiplier="1.3"
+                android:maxLines="5"
+                android:ellipsize="end"/>
 
-                <TextView
-                    android:id="@+id/tvBookTitle"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:textSize="15sp"
-                    android:textStyle="bold"
-                    android:textColor="@color/on_surface"
-                    android:maxLines="1"
-                    android:ellipsize="end"/>
-
-                <TextView
-                    android:id="@+id/tvStatus"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:textSize="10sp"
-                    android:textColor="@color/white"
-                    android:paddingHorizontal="7dp"
-                    android:paddingVertical="3dp"
-                    android:layout_marginStart="6dp"/>
-
-                <!-- 操作菜单按钮 -->
-                <ImageButton
-                    android:id="@+id/btnMore"
-                    android:layout_width="32dp"
-                    android:layout_height="32dp"
-                    android:layout_marginStart="2dp"
-                    android:src="@drawable/ic_more_vert"
-                    android:background="?attr/selectableItemBackgroundBorderless"
-                    android:tint="@color/text_secondary"
-                    android:contentDescription="更多操作"/>
-
-            </LinearLayout>
-
-            <!-- 作者 -->
+            <!-- 作者（底部倒数第二行） -->
             <TextView
                 android:id="@+id/tvBookAuthor"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:textSize="12sp"
-                android:textColor="@color/text_secondary"
-                android:layout_marginTop="4dp"
+                android:layout_above="@id/tvWordCount"
+                android:layout_marginBottom="3dp"
+                android:textSize="10sp"
+                android:textColor="#BBFFFFFF"
                 android:maxLines="1"
                 android:ellipsize="end"/>
 
-            <!-- 字数 -->
+            <!-- 字数（底部最下行，继续阅读按钮上方） -->
             <TextView
                 android:id="@+id/tvWordCount"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:textSize="11sp"
-                android:textColor="@color/text_secondary"
-                android:layout_marginTop="2dp"/>
+                android:layout_alignParentBottom="true"
+                android:layout_marginBottom="24dp"
+                android:textSize="9sp"
+                android:textColor="#99FFFFFF"/>
 
-            <!-- 继续阅读（仅当有阅读记录时显示）-->
+            <!-- 继续阅读（有阅读记录时显示） -->
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnContinueRead"
                 style="@style/Widget.Material3.Button.TextButton"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
+                android:layout_height="28dp"
+                android:layout_alignParentBottom="true"
+                android:layout_alignParentStart="true"
                 android:paddingHorizontal="0dp"
                 android:text="▶ 继续阅读"
-                android:textSize="12sp"
+                android:textSize="9sp"
+                android:textColor="#DDFFFFFF"
                 android:visibility="gone"/>
 
-        </LinearLayout>
+        </RelativeLayout>
     </LinearLayout>
 
 </com.google.android.material.card.MaterialCardView>

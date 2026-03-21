@@ -49,6 +49,10 @@ class ReaderActivity : AppCompatActivity() {
     private lateinit var binding: ActivityReaderBinding
     private lateinit var insetsController: WindowInsetsControllerCompat
 
+    /** 系统状态栏/导航栏高度（沉浸模式增加内边距，防止内容躲在刘海/摄像头后面） */
+    private var systemStatusBarHeight = 0
+    private var systemNavBarHeight    = 0
+
     private var chapterId: Long = 0
     private var bookId: Long = 0
     private var currentIndex: Int = -1
@@ -154,6 +158,22 @@ class ReaderActivity : AppCompatActivity() {
         insetsController = WindowCompat.getInsetsController(window, window.decorView)
         insetsController.systemBarsBehavior =
             WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+
+        // 打孔屏/刘海屏：强制内容延伸到挖孔区域两侧（shortEdges），在沉浸模式下
+        // 仍然通过 scrollView 的 padding 保护文字不被摄像头遮挡
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
+            window.attributes = window.attributes.also {
+                it.layoutInDisplayCutoutMode =
+                    android.view.WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+            }
+        }
+
+        // 监听系统栏 insets，记录高度用于沉浸模式下的安全内边距
+        androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(binding.readerRoot) { _, insets ->
+            systemStatusBarHeight = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.statusBars()).top
+            systemNavBarHeight    = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.navigationBars()).bottom
+            insets
+        }
 
         setSupportActionBar(binding.toolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
@@ -436,6 +456,12 @@ class ReaderActivity : AppCompatActivity() {
             }
         }
 
+        // 显示系统栏后，清除沉浸模式下的安全 padding（AppBarLayout 的 fitsSystemWindows=true 会处理顶部）
+        binding.scrollView.apply {
+            clipToPadding = true
+            setPadding(0, 0, 0, 0)
+        }
+
         // 隐藏沉浸模式状态栏
         binding.immersiveStatusBar.visibility = View.GONE
 
@@ -458,12 +484,14 @@ class ReaderActivity : AppCompatActivity() {
                     binding.scrollView.updateLayoutParams<androidx.coordinatorlayout.widget.CoordinatorLayout.LayoutParams> {
                         topMargin = 0
                     }
+                    applyImmersivePadding()
                 }.start()
         } else {
             binding.appBarLayout.visibility = View.GONE
             binding.scrollView.updateLayoutParams<androidx.coordinatorlayout.widget.CoordinatorLayout.LayoutParams> {
                 topMargin = 0
             }
+            applyImmersivePadding()
         }
 
         // 底部控制面板滑出到底部
@@ -483,6 +511,22 @@ class ReaderActivity : AppCompatActivity() {
         // 显示沉浸模式状态栏
         binding.immersiveStatusBar.visibility = View.VISIBLE
         updateImmersiveInfo()
+    }
+
+    /**
+     * 沉浸模式下为 scrollView 加上安全内边距：
+     * - paddingTop  = 状态栏/刘海高度 → 首行文字不被摄像头遮挡
+     * - paddingBottom = 导航栏高度    → 末行文字不被圆角/手势区遮挡
+     * clipToPadding=false 确保背景色仍绘制到屏幕边缘，不留白条。
+     */
+    private fun applyImmersivePadding() {
+        val top = if (systemStatusBarHeight > 0) systemStatusBarHeight else
+            (resources.displayMetrics.density * 24 + 0.5f).toInt()  // 24dp fallback
+        val bot = if (systemNavBarHeight > 0) systemNavBarHeight else 0
+        binding.scrollView.apply {
+            clipToPadding = false
+            setPadding(0, top, 0, bot)
+        }
     }
 
     // ─────────────────── 子面板切换 ───────────────────
@@ -766,8 +810,9 @@ class ReaderActivity : AppCompatActivity() {
     private fun navigatePage(direction: Int) {
         val sv = binding.scrollView
         val child = sv.getChildAt(0) ?: return
-        val pageHeight = sv.height
-        val contentHeight = child.height
+        // 扣除沉浸模式安全 padding，计算真实可视区域高度，避免翻页时跳过内容或显示半行
+        val pageHeight = (sv.height - sv.paddingTop - sv.paddingBottom).coerceAtLeast(1)
+        val contentHeight = child.measuredHeight.takeIf { it > 0 } ?: child.height
         val currentY = sv.scrollY
         if (direction > 0) {
             val maxScroll = (contentHeight - pageHeight).coerceAtLeast(0)
@@ -798,21 +843,25 @@ class ReaderActivity : AppCompatActivity() {
         isPageAnimating = true
         val sv = binding.scrollView
         val width = sv.width.toFloat()
-        val slideOut = if (direction > 0) -width else width
+        // 翻页动画：部分宽度位移 + alpha 淡化，模拟书页自然翻转感
+        val slideOut = if (direction > 0) -(width * 0.55f) else (width * 0.55f)
         val slideIn  = -slideOut
-        val interpolatorOut = android.view.animation.AccelerateInterpolator(1.2f)
+        val interpolatorOut = android.view.animation.AccelerateInterpolator(1.0f)
         val interpolatorIn  = android.view.animation.DecelerateInterpolator(1.2f)
         sv.animate().cancel()
         sv.animate()
             .translationX(slideOut)
-            .setDuration(160L)
+            .alpha(0.25f)
+            .setDuration(150L)
             .setInterpolator(interpolatorOut)
             .withEndAction {
                 sv.scrollTo(0, targetScrollY)
                 sv.translationX = slideIn
+                sv.alpha = 0.25f
                 sv.animate()
                     .translationX(0f)
-                    .setDuration(160L)
+                    .alpha(1f)
+                    .setDuration(180L)
                     .setInterpolator(interpolatorIn)
                     .withEndAction { isPageAnimating = false }
                     .start()

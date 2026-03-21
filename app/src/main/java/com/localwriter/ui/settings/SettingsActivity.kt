@@ -380,10 +380,15 @@ class SettingsActivity : AppCompatActivity() {
             .setNegativeButton("取消", null)
             .create()
 
-        // 展示对话框期间暂停锁定检测（Dialog 会导致 Activity onPause/onStop）
+        // 展示对话框期间暂停锁定检测
+        // 部分设备（MIUI/HONOR 等）AlertDialog.show() 会短暂触发 Activity onPause/onResume，
+        // 使用 postDelayed 确保 onResume 先执行（suppressLockCheck 仍为 true），
+        // 再重置标志，彻底避免竞态导致的"秒跳主页"问题。
         suppressLockCheck = true
 
-        dialog.setOnDismissListener { suppressLockCheck = false }
+        dialog.setOnDismissListener {
+            binding.root.postDelayed({ suppressLockCheck = false }, 400)
+        }
 
         // 必须先 show，container 才会被加入 window 层级
         dialog.show()
