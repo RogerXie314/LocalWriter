@@ -11,7 +11,9 @@ import android.os.Handler
 import android.os.Looper
 import android.view.MenuItem
 import android.view.View
+import android.widget.ImageView
 import android.widget.SeekBar
+import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -629,6 +631,43 @@ class ReaderActivity : AppCompatActivity() {
         if (binding.tvImmersiveChapterHeader.visibility == View.VISIBLE) {
             binding.tvImmersiveChapterHeader.setTextColor(TEXT_COLORS[idx])
         }
+        applyControlPanelTheme(BG_COLORS[idx], TEXT_COLORS[idx])
+    }
+
+    /**
+     * 将底部控制面板的背景和文字颜色调整为与阅读背景一致的色调。
+     * 面板背景在原始 bgColor 上叠加一层轻微明暗偏移，产生「悬浮层」视觉效果。
+     */
+    private fun applyControlPanelTheme(bgColor: Int, textColor: Int) {
+        val lum = Color.luminance(bgColor)
+        val overlay = if (lum > 0.3f) Color.BLACK else Color.WHITE
+        val scrim   = if (lum > 0.3f) 0.07f else 0.09f
+        val panelBg = Color.rgb(
+            (Color.red(bgColor)   * (1 - scrim) + Color.red(overlay)   * scrim).toInt(),
+            (Color.green(bgColor) * (1 - scrim) + Color.green(overlay) * scrim).toInt(),
+            (Color.blue(bgColor)  * (1 - scrim) + Color.blue(overlay)  * scrim).toInt()
+        )
+        binding.bottomControlOverlay.setBackgroundColor(panelBg)
+
+        val secondaryColor = Color.argb(
+            (255 * 0.6f).toInt(),
+            Color.red(textColor), Color.green(textColor), Color.blue(textColor)
+        )
+        val tintList = ColorStateList.valueOf(textColor)
+
+        // 导航栏四图标及标签
+        listOf(binding.ibNavToc, binding.ibNavBrightness, binding.ibNavNight, binding.ibNavSettings)
+            .forEach { container ->
+                for (i in 0 until container.childCount) {
+                    when (val child = container.getChildAt(i)) {
+                        is ImageView -> child.imageTintList = tintList
+                        is TextView  -> child.setTextColor(textColor)
+                    }
+                }
+            }
+
+        // 章节进度文字
+        binding.tvChapterProgress.setTextColor(secondaryColor)
     }
 
     private fun updateBgCircles() {
@@ -666,6 +705,7 @@ class ReaderActivity : AppCompatActivity() {
         binding.scrollView.setBackgroundColor(0xFF1A1A2E.toInt())
         binding.tvContent.setTextColor(0xFFCCCCCC.toInt())
         binding.tvChapterTitle.setTextColor(0xFFBBBBBB.toInt())
+        applyControlPanelTheme(0xFF1A1A2E.toInt(), 0xFFCCCCCC.toInt())
         val attr = window.attributes
         if (attr.screenBrightness < 0 || attr.screenBrightness > 0.4f) {
             attr.screenBrightness = 0.3f
@@ -761,6 +801,7 @@ class ReaderActivity : AppCompatActivity() {
                 binding.tvContent.setTextColor(settings.textColor)
                 binding.tvChapterTitle.setTextColor(settings.textColor)
                 binding.scrollView.setBackgroundColor(settings.backgroundColor)
+                applyControlPanelTheme(settings.backgroundColor, settings.textColor)
             }
         }
         if (currentFontSize == 0f) currentFontSize = settings.fontSize.toFloat()
@@ -780,6 +821,7 @@ class ReaderActivity : AppCompatActivity() {
         binding.tvContent.setTextColor(settings.textColor)
         binding.tvChapterTitle.setTextColor(settings.textColor)
         binding.scrollView.setBackgroundColor(settings.backgroundColor)
+        applyControlPanelTheme(settings.backgroundColor, settings.textColor)
     }
 
     // ─────────────────── 数据加载 ───────────────────
