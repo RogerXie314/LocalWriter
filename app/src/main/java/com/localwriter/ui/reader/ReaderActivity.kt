@@ -136,7 +136,7 @@ class ReaderActivity : AppCompatActivity() {
 
         // 恢复持久化偏好
         val prefs = getSharedPreferences(PREFS_READER, MODE_PRIVATE)
-        currentFontSize   = prefs.getFloat(KEY_FONT_SIZE, 0f)
+        currentFontSize   = prefs.getFloat(KEY_FONT_SIZE, 18f)
         currentSpacingIdx = prefs.getInt(KEY_SPACING, 2)
         nightModeActive   = prefs.getBoolean(KEY_NIGHT_MODE, false)
         activeBgColorIdx  = prefs.getInt(KEY_BG_COLOR_IDX, -1)
@@ -583,7 +583,7 @@ class ReaderActivity : AppCompatActivity() {
             val total = allChapterIds.size
             binding.tvChapterProgress.text = "${currentIndex + 1} / $total 章"
 
-            val scrollY = chapter.lastCursorPos
+            val scrollY = chapter.lastScrollPos
             binding.scrollView.post { binding.scrollView.scrollTo(0, scrollY) }
             updateBookmarkIndicator()
             updateFontSizeDisplay()
@@ -636,7 +636,7 @@ class ReaderActivity : AppCompatActivity() {
         val chapId  = chapterId
         lifecycleScope.launch(Dispatchers.IO) {
             (application as LocalWriterApp).database.chapterDao()
-                .updateCursorPos(chapId, scrollY)
+                .updateScrollPos(chapId, scrollY)
         }
     }
 
@@ -687,6 +687,24 @@ class ReaderActivity : AppCompatActivity() {
 
         // 章节统计
         sheetBinding.tvTocStats.text = "共 ${allChapterIds.size} 章"
+
+        // 书签 tab：跳转到当前章节书签位置
+        sheetBinding.btnBookmarkTab.setOnClickListener {
+            val scrollY = getSharedPreferences(PREFS_READER, MODE_PRIVATE)
+                .getInt("$KEY_BOOKMARK_PRE$chapterId", -1)
+            if (scrollY > 0) {
+                sheet.dismiss()
+                binding.scrollView.smoothScrollTo(0, scrollY)
+                Toast.makeText(this, "已跳转到书签位置", Toast.LENGTH_SHORT).show()
+            } else {
+                Toast.makeText(this, "当前章节暂无书签，滚动时会自动保存", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        // 笔记 tab：功能待开发
+        sheetBinding.btnNotesTab.setOnClickListener {
+            Toast.makeText(this, "笔记功能正在开发中", Toast.LENGTH_SHORT).show()
+        }
 
         // 是否倒序
         var isReversed = false

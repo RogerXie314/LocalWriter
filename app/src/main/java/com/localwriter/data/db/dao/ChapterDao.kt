@@ -85,6 +85,9 @@ interface ChapterDao {
     @Query("UPDATE chapters SET lastCursorPos = :pos WHERE id = :chapterId")
     suspend fun updateCursorPos(chapterId: Long, pos: Int)
 
+    @Query("UPDATE chapters SET lastScrollPos = :pos WHERE id = :chapterId")
+    suspend fun updateScrollPos(chapterId: Long, pos: Int)
+
     @Query("UPDATE chapters SET content = :content, wordCount = :wordCount, updatedAt = :updatedAt WHERE id = :chapterId")
     suspend fun updateContent(chapterId: Long, content: String, wordCount: Int, updatedAt: Long = System.currentTimeMillis())
 
@@ -92,7 +95,7 @@ interface ChapterDao {
     suspend fun updateTitle(chapterId: Long, title: String, updatedAt: Long = System.currentTimeMillis())
 
     @Query("SELECT SUM(wordCount) FROM chapters WHERE bookId = :bookId AND status != 'DELETED'")
-    suspend fun sumWordCount(bookId: Long): Int
+    suspend fun sumWordCount(bookId: Long): Int?
 
     @Query("SELECT COUNT(*) FROM chapters WHERE bookId = :bookId AND status != 'DELETED'")
     suspend fun countByBook(bookId: Long): Int

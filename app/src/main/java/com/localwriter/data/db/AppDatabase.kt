@@ -17,18 +17,12 @@ import com.localwriter.data.db.entity.*
  *    Migration 对象（只写 ALTER TABLE / CREATE TABLE 等）。
  *  - 禁止使用 fallbackToDestructiveMigration()，生产用户数据不可破坏性重建。
  *
- * 当前版本：1（初始版本）
- *
- * 示例（未来版本升级时仿照添加）：
- *   val MIGRATION_1_2 = object : Migration(1, 2) {
- *       override fun migrate(db: SupportSQLiteDatabase) {
- *           db.execSQL("ALTER TABLE books ADD COLUMN subtitle TEXT NOT NULL DEFAULT ''")
- *       }
- *   }
+ * 当前版本：2
+ *  v1→v2：chapters 表新增 lastScrollPos 列（存储阅读器滚动偏移，与 lastCursorPos 解耦）
  */
 @Database(
     entities = [User::class, Book::class, Volume::class, Chapter::class, UserSettings::class],
-    version = 1,
+    version = 2,
     exportSchema = true   // 生产应用应导出 schema，便于 code review 和回滚比对
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -47,8 +41,17 @@ abstract class AppDatabase : RoomDatabase() {
          * 所有版本迁移脚本按序列在此注册。
          * 每次 version 升级时把对应 MIGRATION_x_y 添加到这个数组中。
          */
+        val MIGRATION_1_2 = object : Migration(1, 2) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // 新增阅读器专用滚动位置列，与编辑器光标位置（lastCursorPos）分离存储
+                db.execSQL(
+                    "ALTER TABLE chapters ADD COLUMN lastScrollPos INTEGER NOT NULL DEFAULT 0"
+                )
+            }
+        }
+
         private val ALL_MIGRATIONS: Array<Migration> = arrayOf(
-            // MIGRATION_1_2,  // 未来版本在此追加
+            MIGRATION_1_2,
         )
 
         fun getInstance(context: Context): AppDatabase {

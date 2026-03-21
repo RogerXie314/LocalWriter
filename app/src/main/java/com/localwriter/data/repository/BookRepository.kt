@@ -50,8 +50,8 @@ class BookRepository(
 
     /** 刷新书籍总字数（根据所有非删除章节求和）*/
     suspend fun refreshWordCount(bookId: Long) {
-        val total = chapterDao.sumWordCount(bookId)
-        bookDao.updateWordCount(bookId, total ?: 0)
+        val total = chapterDao.sumWordCount(bookId) ?: 0
+        bookDao.updateWordCount(bookId, total)
     }
 
     suspend fun updateLastChapter(bookId: Long, chapterId: Long) {

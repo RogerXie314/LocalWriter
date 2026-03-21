@@ -1,6 +1,7 @@
 package com.localwriter.ui.settings
 
 import androidx.lifecycle.*
+import com.localwriter.data.db.entity.User
 import com.localwriter.data.db.entity.UserSettings
 import com.localwriter.data.repository.AuthRepository
 import com.localwriter.data.repository.SettingsRepository
@@ -14,12 +15,16 @@ class SettingsViewModel(
     private val _settings = MutableLiveData<UserSettings?>()
     val settings: LiveData<UserSettings?> = _settings
 
+    private val _user = MutableLiveData<User?>()
+    val user: LiveData<User?> = _user
+
     private var userId: Long = 0
 
     fun load(userId: Long) {
         this.userId = userId
         viewModelScope.launch {
             _settings.value = settingsRepo.getOrCreate(userId)
+            _user.value = authRepo.getUserById(userId)
         }
     }
 

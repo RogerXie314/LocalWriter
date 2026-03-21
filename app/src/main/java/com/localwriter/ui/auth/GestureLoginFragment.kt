@@ -52,6 +52,13 @@ class GestureLoginFragment : Fragment() {
         super.onCreate(savedInstanceState)
         userId = arguments?.getLong(ARG_USER_ID) ?: 0
         isSetup = arguments?.getBoolean(ARG_IS_SETUP) ?: false
+        // 旋转屏幕后恢复第一次绘制的图案（避免二次确认流程被打断）
+        firstPattern = savedInstanceState?.getString("first_pattern")
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        firstPattern?.let { outState.putString("first_pattern", it) }
     }
 
     override fun onCreateView(

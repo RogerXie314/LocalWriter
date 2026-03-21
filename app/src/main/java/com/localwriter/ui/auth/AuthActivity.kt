@@ -169,9 +169,12 @@ class AuthActivity : AppCompatActivity() {
         val executor = ContextCompat.getMainExecutor(this)
         val callback = object : BiometricPrompt.AuthenticationCallback() {
             override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
-                // 生物识别成功，获取当前用户ID（从 SessionManager 或 DB 首个用户）
-                val userId = SessionManager.getUserId(this@AuthActivity).let {
-                    if (it == -1L) 1L else it
+                // 直接使用当前已确认身份的用户 ID，避免多用户场景下错误绑定
+                val userId = currentUserId
+                if (userId == -1L) {
+                    Toast.makeText(this@AuthActivity, "无法识别用户，请使用密码登录", Toast.LENGTH_SHORT).show()
+                    showPasswordLogin()
+                    return
                 }
                 SessionManager.saveUserId(this@AuthActivity, userId)
                 SessionManager.unlock(this@AuthActivity)

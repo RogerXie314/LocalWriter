@@ -269,6 +269,12 @@ class EditorActivity : AppCompatActivity() {
             try {
                 viewModel.saveContentSync(chapterId, content)
                 viewModel.saveLastCursor(chapterId, cursorPos)
+            } catch (e: Exception) {
+                Toast.makeText(
+                    this@EditorActivity,
+                    "保存失败，请检查存储空间",
+                    Toast.LENGTH_LONG
+                ).show()
             } finally {
                 finish()
             }

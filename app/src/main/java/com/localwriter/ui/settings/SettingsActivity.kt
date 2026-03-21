@@ -89,6 +89,7 @@ class SettingsActivity : AppCompatActivity() {
         setupLockTimeoutSpinner()
         setupAboutSection()
         observeSettings()
+        observeUser()
     }
 
     /** 切换主题皮肤：显示圆形色块，当前主题加勾选标记 */
@@ -252,6 +253,8 @@ class SettingsActivity : AppCompatActivity() {
     private fun setupSecuritySection() {
         binding.btnChangePassword.setOnClickListener { showChangePasswordDialog() }
         binding.btnSetGesture.setOnClickListener    { showSetGestureDialog() }
+        // 不在这里设置 checked 状态——等 observeUser() 从 DB 加载后再初始化，
+        // 避免 setOnCheckedChangeListener 触发时使用错误的初始值。
         binding.switchBiometric.setOnCheckedChangeListener { _, checked ->
             viewModel.enableBiometric(checked)
         }
@@ -282,17 +285,19 @@ class SettingsActivity : AppCompatActivity() {
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         binding.spinnerLockTimeout.adapter = adapter
 
-        // 选中当前已保存的超时
-        val currentMinutes = SessionManager.getLockTimeout(this)
-        val currentIdx = options.indexOfFirst { it.second == currentMinutes }.let { if (it < 0) 2 else it }
-        binding.spinnerLockTimeout.setSelection(currentIdx, false)
-
+        // 先注册监听器再调用 setSelection，确保初始化时不会写入错误值
         binding.spinnerLockTimeout.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>?, view: android.view.View?, pos: Int, id: Long) {
                 SessionManager.setLockTimeout(this@SettingsActivity, options[pos].second)
             }
             override fun onNothingSelected(parent: AdapterView<*>?) {}
         }
+
+        // 选中当前已保存的超时（在 listener 注册后调用，但 setSelection(idx, false) 的 animate=false
+        // 会抑制 Spinner 的初始触发，保持与已持久化值一致）
+        val currentMinutes = SessionManager.getLockTimeout(this)
+        val currentIdx = options.indexOfFirst { it.second == currentMinutes }.let { if (it < 0) 2 else it }
+        binding.spinnerLockTimeout.setSelection(currentIdx, false)
     }
 
     /** 修改密码对话框 */
@@ -411,6 +416,18 @@ class SettingsActivity : AppCompatActivity() {
                 chip?.isChecked = chip?.tag == settings.fontFamily
             }
             updatePreview(settings.backgroundColor)
+        }
+    }
+
+    private fun observeUser() {
+        viewModel.user.observe(this) { user ->
+            user ?: return@observe
+            // 从 DB 加载后初始化生物识别开关，避免每次进入设置页都显示关闭状态
+            binding.switchBiometric.setOnCheckedChangeListener(null)
+            binding.switchBiometric.isChecked = user.biometricEnabled
+            binding.switchBiometric.setOnCheckedChangeListener { _, checked ->
+                viewModel.enableBiometric(checked)
+            }
         }
     }
 
