@@ -6,7 +6,6 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
-import android.animation.ValueAnimator
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -437,6 +436,9 @@ class ReaderActivity : AppCompatActivity() {
         val prevPaddingTop = binding.scrollView.paddingTop
         val prevScrollY    = binding.scrollView.scrollY
 
+        // 隐藏沉浸模式顶部章节名
+        binding.tvImmersiveChapterHeader.visibility = View.GONE
+
         // 工具栏从顶部滑入（覆盖在 scrollView 上方，不推挤内容）
         binding.appBarLayout.apply {
             val startY = -(height.takeIf { it > 0 } ?: actionBarHeight).toFloat()
@@ -492,10 +494,12 @@ class ReaderActivity : AppCompatActivity() {
                 .withEndAction {
                     binding.appBarLayout.visibility = View.GONE
                     applyImmersivePaddingCompensated(snapshotPaddingTop, snapshotScrollY)
+                    showImmersiveChapterHeader()
                 }.start()
         } else {
             binding.appBarLayout.visibility = View.GONE
             applyImmersivePaddingCompensated(snapshotPaddingTop, snapshotScrollY)
+            showImmersiveChapterHeader()
         }
 
         // 底部控制面板滑出到底部
@@ -519,16 +523,20 @@ class ReaderActivity : AppCompatActivity() {
 
     /**
      * 沉浸模式下为 scrollView 加上安全内边距，并补偿 scrollY 使可见文字不跳动：
-     * - paddingTop  = 状态栏/刘海高度 → 首行文字不被摄像头遮挡
-     * - paddingBottom = 导航栏高度    → 末行文字不被圆角/手势区遮挡
+     * - paddingTop  = 状态栏高度 + 顶部头信息区（章节标题行 + 适当留白）
+     * - paddingBottom = 导航栏高度 + 底部信息区（进度/时间行 + 适当留白）
      * - scrollY 按 (prevPaddingTop - newPaddingTop) 补偿，视觉位置不变
      * clipToPadding=false 确保背景色仍绘制到屏幕边缘，不留白条。
      */
     private fun applyImmersivePaddingCompensated(prevPaddingTop: Int, prevScrollY: Int) {
-        val top = if (systemStatusBarHeight > 0) systemStatusBarHeight
-                  else (resources.displayMetrics.density * 24 + 0.5f).toInt()
-        val bot = if (systemNavBarHeight > 0) systemNavBarHeight else 0
-        // 仅在从"工具栏显示"切换到沉浸时才补偿（prevPaddingTop 大于 top 才有意义）
+        val density = resources.displayMetrics.density
+        val statusH = if (systemStatusBarHeight > 0) systemStatusBarHeight
+                      else (24 * density + 0.5f).toInt()
+        val navH = if (systemNavBarHeight > 0) systemNavBarHeight else 0
+        // 顶部：状态栏 + 章节标题行高度(约36dp) + 8dp 缓冲
+        val top = statusH + (44 * density + 0.5f).toInt()
+        // 底部：导航栏 + 底部状态栏高度(约28dp)
+        val bot = navH + (32 * density + 0.5f).toInt()
         val newScrollY = if (prevPaddingTop > top) {
             (prevScrollY - (prevPaddingTop - top)).coerceAtLeast(0)
         } else {
@@ -544,6 +552,26 @@ class ReaderActivity : AppCompatActivity() {
     private fun applyImmersivePadding() {
         // 初始进入沉浸模式，无需补偿 scrollY（章节加载后会独立设置 scrollY）
         applyImmersivePaddingCompensated(0, 0)
+    }
+
+    /** 在沉浸模式顶部显示章节名（小字），高度与 paddingTop 中的留白对应 */
+    private fun showImmersiveChapterHeader() {
+        val density = resources.displayMetrics.density
+        val statusH = if (systemStatusBarHeight > 0) systemStatusBarHeight
+                      else (24 * density + 0.5f).toInt()
+        binding.tvImmersiveChapterHeader.apply {
+            text = binding.tvChapterTitle.text
+            val textColor = binding.tvContent.currentTextColor
+            setTextColor(textColor)
+            // 顶部 padding = 状态栏高度，文字紧贴状态栏下方
+            setPadding((20 * density + 0.5f).toInt(), statusH + (6 * density + 0.5f).toInt(),
+                       (20 * density + 0.5f).toInt(), (6 * density + 0.5f).toInt())
+            visibility = View.VISIBLE
+        }
+        // 底部状态栏文字颜色同步
+        val textColor = binding.tvContent.currentTextColor
+        binding.tvImmersiveProgress.setTextColor(textColor)
+        binding.tvImmersiveTime.setTextColor(textColor)
     }
 
     // ─────────────────── 子面板切换 ───────────────────
@@ -597,6 +625,10 @@ class ReaderActivity : AppCompatActivity() {
         binding.scrollView.setBackgroundColor(BG_COLORS[idx])
         binding.tvContent.setTextColor(TEXT_COLORS[idx])
         binding.tvChapterTitle.setTextColor(TEXT_COLORS[idx])
+        // 同步沉浸模式顶部章节名颜色
+        if (binding.tvImmersiveChapterHeader.visibility == View.VISIBLE) {
+            binding.tvImmersiveChapterHeader.setTextColor(TEXT_COLORS[idx])
+        }
     }
 
     private fun updateBgCircles() {
@@ -789,6 +821,10 @@ class ReaderActivity : AppCompatActivity() {
 
             supportActionBar?.title = chapter.title
             binding.tvChapterTitle.text = chapter.title
+            // 同步更新沉浸模式顶部章节名
+            if (!barsVisible && binding.tvImmersiveChapterHeader.visibility == View.VISIBLE) {
+                binding.tvImmersiveChapterHeader.text = chapter.title
+            }
             // 每段首行添加全角空格缩进（仿真实书籍排版）
             val indented = chapter.content.ifEmpty { "（本章暂无内容）" }
                 .lines()
@@ -862,10 +898,10 @@ class ReaderActivity : AppCompatActivity() {
      * 整个过程在 ScrollView 的 translationX 上操作，不影响实际内容位置。
      */
     /**
-     * 仿真翻页动画：
-     * 1. 截取当前 ScrollView 可见区域为位图
-     * 2. 跳转到新页面（目标 scrollY）
-     * 3. 用 PageFlipOverlay 在顶层 3D 旋转该位图，模拟书页翻转
+     * 翻页动画：水平滑动切页（自然不喧宾夺主）
+     * 1. 截取当前可见区域为位图
+     * 2. 跳转到目标 scrollY（新页已在背景渲染）
+     * 3. 位图覆盖在顶层，向左/右平滑滑出，新页从背后显露
      */
     private fun slideAnimatePage(targetScrollY: Int, direction: Int) {
         if (isPageAnimating) return
@@ -874,40 +910,37 @@ class ReaderActivity : AppCompatActivity() {
         val sv = binding.scrollView
         val overlay = binding.pageFlipOverlay
 
-        // Step 1: 截取当前可见页面
+        // 截取当前可见内容
         val bmp = try {
             Bitmap.createBitmap(sv.width.coerceAtLeast(1), sv.height.coerceAtLeast(1),
                 Bitmap.Config.RGB_565).also { sv.draw(Canvas(it)) }
         } catch (e: Exception) {
-            // 截图失败时回退到简单跳转
             sv.scrollTo(0, targetScrollY)
             isPageAnimating = false
             return
         }
 
-        // Step 2: 立即跳至新位置（位图覆盖在上方，用户不会看到跳转）
+        // 立即跳至新页（覆盖层遮住跳转闪烁）
         sv.scrollTo(0, targetScrollY)
 
-        // Step 3: 配置覆盖层并播放翻页动画
-        overlay.frontBitmap  = bmp
-        overlay.flipDirection = direction
-        overlay.flipProgress  = 0f
-        overlay.visibility   = View.VISIBLE
+        // 显示覆盖层，从原位平滑滑出
+        overlay.frontBitmap = bmp
+        overlay.translationX = 0f
+        overlay.visibility = View.VISIBLE
 
-        val animator = ValueAnimator.ofFloat(0f, 1f).apply {
-            duration = 320L
-            interpolator = android.view.animation.AccelerateDecelerateInterpolator()
-            addUpdateListener { overlay.flipProgress = it.animatedValue as Float }
-            addListener(object : android.animation.AnimatorListenerAdapter() {
-                override fun onAnimationEnd(animation: android.animation.Animator) {
-                    overlay.visibility = View.GONE
-                    overlay.frontBitmap?.recycle()
-                    overlay.frontBitmap = null
-                    isPageAnimating = false
-                }
-            })
-        }
-        animator.start()
+        // direction > 0 = 向后翻（当前页左移消失）；direction < 0 = 向前翻（当前页右移消失）
+        val targetX = -sv.width.toFloat() * direction
+        overlay.animate()
+            .translationX(targetX)
+            .setDuration(200L)
+            .setInterpolator(android.view.animation.DecelerateInterpolator())
+            .withEndAction {
+                overlay.visibility = View.GONE
+                overlay.translationX = 0f
+                overlay.frontBitmap?.recycle()
+                overlay.frontBitmap = null
+                isPageAnimating = false
+            }.start()
     }
 
     private fun saveScrollPosition() {
