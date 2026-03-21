@@ -16,13 +16,12 @@ class BookListAdapter(
     private val onContinueRead: (Book) -> Unit = {}
 ) : ListAdapter<Book, BookListAdapter.BookViewHolder>(DiffCallback) {
 
-    /** 当前列数；由 Fragment 通过 setSpanCount() 设置 */
+    /** 当前列数；修改后自动刷新列表 */
     var spanCount: Int = 3
-
-    fun setSpanCount(n: Int) {
-        spanCount = n
-        notifyItemRangeChanged(0, itemCount)
-    }
+        set(value) {
+            field = value
+            notifyItemRangeChanged(0, itemCount)
+        }
 
     inner class BookViewHolder(
         private val binding: ItemBookBinding

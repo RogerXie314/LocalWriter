@@ -140,7 +140,7 @@ class BookListFragment : Fragment() {
 
     private fun applyGridColumns(columns: Int) {
         binding.rvBooks.layoutManager = GridLayoutManager(context, columns)
-        adapter.setSpanCount(columns)
+        adapter.spanCount = columns
     }
 
     /** 打开阅读器，从上次阅读章节继续 */
