@@ -101,7 +101,21 @@
         android:elevation="4dp"
         android:visibility="gone">
 
-        <!-- 章节标题（左对齐，超长截断） -->
+        <!-- 返回按钮（沉浸模式下提供返回入口，不依赖 Toolbar） -->
+        <ImageView
+            android:id="@+id/ivImmersiveBack"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:layout_marginEnd="8dp"
+            android:src="@drawable/ic_arrow_back"
+            android:scaleType="fitCenter"
+            android:alpha="0.65"
+            android:clickable="true"
+            android:focusable="true"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="返回" />
+
+        <!-- 书名（左对齐，超长截断；章节名已在正文内容中显示，此处避免重复） -->
         <TextView
             android:id="@+id/tvImmersiveChapterHeader"
             android:layout_width="0dp"

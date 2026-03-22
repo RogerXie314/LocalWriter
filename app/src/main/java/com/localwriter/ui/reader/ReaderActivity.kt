@@ -62,6 +62,8 @@ class ReaderActivity : AppCompatActivity() {
 
     private var allChapterIds: List<Long> = emptyList()
     private var chapterTitles: List<String> = emptyList()
+    /** 书名，用于沉浸模式顶部信息栏（避免与正文中的章节标题重复显示） */
+    private var bookTitle: String = ""
 
     private var currentFontSize: Float = 18f
     private val fontSizeStep = 2f
@@ -385,6 +387,9 @@ class ReaderActivity : AppCompatActivity() {
         binding.btnPageFlip.setOnClickListener   { setPageMode(1) }
         updatePageModeButtons()
 
+        // 沉浸模式顶部返回按钮
+        binding.ivImmersiveBack.setOnClickListener { finish() }
+
         // 手势检测：左右点击区域翻页，中间点击呼出/隐藏工具栏
         flipGestureDetector = android.view.GestureDetector(
             this,
@@ -568,10 +573,10 @@ class ReaderActivity : AppCompatActivity() {
         val statusH = if (systemStatusBarHeight > 0) systemStatusBarHeight
                       else (24 * density + 0.5f).toInt()
         val navH = if (systemNavBarHeight > 0) systemNavBarHeight else 0
-        // 顶部：状态栏/刘海高度 + 顶部信息栏内容(~24dp) + 留白(~36dp) = 60dp 附加量
-        val top = statusH + (60 * density + 0.5f).toInt()
-        // 底部：导航栏 + 底部信息栏内容(~26dp) + 留白(~18dp) = 44dp 附加量
-        val bot = navH  + (44 * density + 0.5f).toInt()
+        // 顶部：状态栏 + 信息栏实际高度(4dp内边距 + 12sp文字 ≈ 28dp) + 4dp安全留白
+        val top = statusH + (32 * density + 0.5f).toInt()
+        // 底部：导航栏 + 信息栏实际高度(8dp+12sp文字+8dp ≈ 32dp) + 4dp安全留白
+        val bot = navH  + (36 * density + 0.5f).toInt()
         val newScrollY = if (prevPaddingTop > top) {
             (prevScrollY - (prevPaddingTop - top)).coerceAtLeast(0)
         } else {
@@ -611,11 +616,13 @@ class ReaderActivity : AppCompatActivity() {
             visibility = View.VISIBLE
         }
         binding.tvImmersiveChapterHeader.apply {
-            text = binding.tvChapterTitle.text
+            // 显示书名而非章节名，章节名已在正文内容区显示
+            text = if (bookTitle.isNotEmpty()) bookTitle else binding.tvChapterTitle.text
             setTextColor(textColor)
         }
         binding.tvImmersiveBattery.setTextColor(textColor)
         binding.tvImmersiveTime.setTextColor(textColor)
+        binding.ivImmersiveBack.imageTintList = ColorStateList.valueOf(textColor)
 
         // 底部信息栏：留出导航栏/手势指示条高度 + 充足底部留白
         binding.immersiveStatusBar.apply {
@@ -642,6 +649,7 @@ class ReaderActivity : AppCompatActivity() {
             binding.tvImmersiveChapterHeader.setTextColor(textColor)
             binding.tvImmersiveBattery.setTextColor(textColor)
             binding.tvImmersiveTime.setTextColor(textColor)
+            binding.ivImmersiveBack.imageTintList = ColorStateList.valueOf(textColor)
         }
         if (binding.immersiveStatusBar.visibility == View.VISIBLE) {
             binding.immersiveStatusBar.setBackgroundColor(bgColor)
@@ -836,16 +844,19 @@ class ReaderActivity : AppCompatActivity() {
         val total = allChapterIds.size
         val chapterText = if (total > 0) "${currentIndex + 1}/$total 章" else "-/-"
 
-        // 章节内阅读百分比
+        // 全书阅读进度（而非章节内进度，避免短章节时进度跳动过大）
         val child = binding.scrollView.getChildAt(0)
-        val progressText = if (child != null) {
+        val progressText = if (child != null && allChapterIds.isNotEmpty()) {
             val maxScroll = (child.height - binding.scrollView.height).coerceAtLeast(1)
-            val pct = ((binding.scrollView.scrollY.toFloat() / maxScroll) * 100)
+            val withinPct = ((binding.scrollView.scrollY.toFloat() / maxScroll) * 100)
                 .toInt().coerceIn(0, 100)
-            "$pct%"
-        } else "0%"
+            val total = allChapterIds.size
+            val globalPct = ((currentIndex + withinPct / 100.0) / total * 100)
+                .toInt().coerceIn(0, 100)
+            "全书 $globalPct%"
+        } else "全书 0%"
 
-        // 底部：进度% 左 / 章节 x/n 右
+        // 底部：全书进度% 左 / 章节 x/n 右
         binding.tvImmersiveProgress.text = progressText
         binding.tvImmersiveChapterIdx.text = chapterText
 
@@ -971,10 +982,7 @@ class ReaderActivity : AppCompatActivity() {
 
             supportActionBar?.title = chapter.title
             binding.tvChapterTitle.text = chapter.title
-            // 同步更新沉浸模式顶部章节名
-            if (!barsVisible && binding.immersiveHeaderBar.visibility == View.VISIBLE) {
-                binding.tvImmersiveChapterHeader.text = chapter.title
-            }
+            // 顶部信息栏显示书名（固定不变），无需随章节切换更新
             // 每段首行添加全角空格缩进（仿真实书籍排版）
             val indented = chapter.content.ifEmpty { "（本章暂无内容）" }
                 .lines()
@@ -1048,7 +1056,8 @@ class ReaderActivity : AppCompatActivity() {
             if (currentY >= maxScroll - SCROLL_TOLERANCE) {
                 navigateChapter(1)
             } else {
-                val rawTarget = (currentY + pageHeight).coerceAtMost(maxScroll)
+                // 每次翻页前进 90%，保留上页最后 10% 内容作为过渡，阅读不迷失
+                val rawTarget = (currentY + pageHeight * 9 / 10).coerceAtMost(maxScroll)
                 val targetY   = snapToLineTop(rawTarget)
                 // snapToLineTop 可能将目标回退到当前位置（已处于最后一行），此时直接翻章
                 if (targetY <= currentY + SCROLL_TOLERANCE) {
@@ -1062,7 +1071,7 @@ class ReaderActivity : AppCompatActivity() {
             if (currentY <= SCROLL_TOLERANCE) {
                 navigateChapter(-1)
             } else {
-                val rawTarget = (currentY - pageHeight).coerceAtLeast(0)
+                val rawTarget = (currentY - pageHeight * 9 / 10).coerceAtLeast(0)
                 val targetY   = snapToLineTop(rawTarget)
                 if (pageMode == 1) slideAnimatePage(targetY, direction)
                 else sv.smoothScrollTo(0, targetY)
