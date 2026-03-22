@@ -153,6 +153,12 @@ copies or substantial portions of the Software.
 
 ## 📋 更新日志
 
+### v1.6.20（2026-03）
+
+- 禁用 lint 阻断 release 构建，防止 lintVitalRelease 卡死发布流程
+
+---
+
 ### v1.6.19（2026-03）
 
 - 修复 Lint MissingDefaultResource，为 night_* 颜色添加 values/ 基础声明

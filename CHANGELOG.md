@@ -1,5 +1,9 @@
 ﻿# Changelog
 
+## [1.6.20] - 2026-03-22
+
+- 禁用 lint 阻断 release 构建，防止 lintVitalRelease 卡死发布流程
+
 ## [1.6.19] - 2026-03-22
 
 - 修复 Lint MissingDefaultResource，为 night_* 颜色添加 values/ 基础声明
