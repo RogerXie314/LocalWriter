@@ -153,6 +153,12 @@ copies or substantial portions of the Software.
 
 ## 📋 更新日志
 
+### v1.6.6（2026-03）
+
+- fcd2085 fix(reader): 搴曢儴鏃犲崐琛?鏁撮〉缈婚〉/椤电爜鏄剧ず/鍥炴敹绔欒彍鍗曟枃瀛楀彲瑙?3395860 chore: release 鑴氭湰鏀逛负鍏堟墦 tag 鍐嶆湰鍦扮紪璇戯紝鐗堟湰鍙峰叏绋嬩竴鑷?
+
+---
+
 ### v1.6.5（2026-03）
 
 - 185af22 chore: release 鑴氭湰鍔犲叆鏈湴缂栬瘧楠岃瘉姝ラ
