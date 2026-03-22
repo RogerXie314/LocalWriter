@@ -98,7 +98,6 @@
         android:gravity="center_vertical"
         android:paddingHorizontal="20dp"
         android:paddingBottom="6dp"
-        android:elevation="4dp"
         android:visibility="gone">
 
         <!-- 返回按钮（沉浸模式下提供返回入口，不依赖 Toolbar） -->
@@ -157,7 +156,6 @@
         android:orientation="horizontal"
         android:paddingHorizontal="20dp"
         android:paddingTop="6dp"
-        android:elevation="4dp"
         android:visibility="gone">
 
         <!-- 章节内阅读百分比（左） -->

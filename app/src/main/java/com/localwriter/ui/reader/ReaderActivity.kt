@@ -126,6 +126,10 @@ class ReaderActivity : AppCompatActivity() {
 
         /** 判断是否位于章节开头/结尾时允许的滚动容差（像素） */
         private const val SCROLL_TOLERANCE = 8
+        /** 沉浸顶栏：状态栏以下内容区域固定高度，与 scrollView.paddingTop 严格对齐（零遮挡） */
+        private const val IMMERSIVE_TOP_DP = 44f
+        /** 沉浸底栏：导航栏以上内容区域固定高度，与 scrollView.paddingBottom 严格对齐（零遮挡） */
+        private const val IMMERSIVE_BOT_DP = 36f
 
         private val SPACINGS = floatArrayOf(1.2f, 1.55f, 1.85f, 2.2f)
 
@@ -468,27 +472,9 @@ class ReaderActivity : AppCompatActivity() {
             if (delta != 0) scrollTo(0, (prevScrollY + delta).coerceAtLeast(0))
         }
 
-        // 沉浸模式信息栏与工具栏交叉淡出，消除空白闪烁
-        if (binding.immersiveHeaderBar.visibility == View.VISIBLE) {
-            binding.immersiveHeaderBar.animate()
-                .alpha(0f).setDuration(ANIM_DURATION)
-                .withEndAction {
-                    binding.immersiveHeaderBar.visibility = View.GONE
-                    binding.immersiveHeaderBar.alpha = 1f
-                }.start()
-        } else {
-            binding.immersiveHeaderBar.visibility = View.GONE
-        }
-        if (binding.immersiveStatusBar.visibility == View.VISIBLE) {
-            binding.immersiveStatusBar.animate()
-                .alpha(0f).setDuration(ANIM_DURATION)
-                .withEndAction {
-                    binding.immersiveStatusBar.visibility = View.GONE
-                    binding.immersiveStatusBar.alpha = 1f
-                }.start()
-        } else {
-            binding.immersiveStatusBar.visibility = View.GONE
-        }
+        // 立即隐藏沉浸信息栏，避免与工具栏同时可见形成双重遮挡
+        binding.immersiveHeaderBar.apply { animate().cancel(); alpha = 1f; visibility = View.GONE }
+        binding.immersiveStatusBar.apply { animate().cancel(); alpha = 1f; visibility = View.GONE }
 
         // 工具栏从顶部滑入（覆盖在 scrollView 上方，不推挤内容）
         binding.appBarLayout.apply {
@@ -524,23 +510,22 @@ class ReaderActivity : AppCompatActivity() {
         val snapshotScrollY    = binding.scrollView.scrollY
         applyImmersivePaddingCompensated(snapshotPaddingTop, snapshotScrollY)
 
-        // 预填内容后立即 alpha=0 显示沉浸信息栏，与工具栏淡出交叉淡入（消除空白闪烁）
-        showImmersiveChapterHeader()
-        binding.immersiveHeaderBar.alpha = 0f
-        binding.immersiveStatusBar.alpha = 0f
-        binding.immersiveHeaderBar.animate().alpha(1f).setDuration(ANIM_DURATION).start()
-        binding.immersiveStatusBar.animate().alpha(1f).setDuration(ANIM_DURATION).start()
-
-        // 工具栏滑出到顶部
+        // 工具栏先滑出，结束后再显示沉浸信息栏，避免两层 UI 同时可见形成双重遮挡
         if (binding.appBarLayout.visibility == View.VISIBLE && binding.appBarLayout.height > 0) {
             binding.appBarLayout.animate()
                 .alpha(0f).translationY(-binding.appBarLayout.height.toFloat())
                 .setDuration(ANIM_DURATION)
                 .withEndAction {
                     binding.appBarLayout.visibility = View.GONE
+                    showImmersiveChapterHeader()
+                    binding.immersiveHeaderBar.alpha = 0f
+                    binding.immersiveStatusBar.alpha = 0f
+                    binding.immersiveHeaderBar.animate().alpha(1f).setDuration(ANIM_DURATION).start()
+                    binding.immersiveStatusBar.animate().alpha(1f).setDuration(ANIM_DURATION).start()
                 }.start()
         } else {
             binding.appBarLayout.visibility = View.GONE
+            showImmersiveChapterHeader()
         }
 
         // 底部控制面板滑出到底部
@@ -573,10 +558,9 @@ class ReaderActivity : AppCompatActivity() {
         val statusH = if (systemStatusBarHeight > 0) systemStatusBarHeight
                       else (24 * density + 0.5f).toInt()
         val navH = if (systemNavBarHeight > 0) systemNavBarHeight else 0
-        // 顶部：状态栏 + 信息栏实际高度(4dp内边距 + 12sp文字 ≈ 28dp) + 4dp安全留白
-        val top = statusH + (32 * density + 0.5f).toInt()
-        // 底部：导航栏 + 信息栏实际高度(8dp+12sp文字+8dp ≈ 32dp) + 4dp安全留白
-        val bot = navH  + (36 * density + 0.5f).toInt()
+        // 与信息栏 layoutParams.height 严格一致，内容起点恰在信息栏下方，零遮挡零间隙
+        val top = statusH + (IMMERSIVE_TOP_DP * density + 0.5f).toInt()
+        val bot = navH   + (IMMERSIVE_BOT_DP * density + 0.5f).toInt()
         val newScrollY = if (prevPaddingTop > top) {
             (prevScrollY - (prevPaddingTop - top)).coerceAtLeast(0)
         } else {
@@ -608,11 +592,14 @@ class ReaderActivity : AppCompatActivity() {
             ?: 0xFFF8F3E3.toInt()
         val horizPad = (20 * density + 0.5f).toInt()
 
-        // 顶部信息栏：状态栏高度 + 4dp 内边距，内容紧贴安全区下方
+        // 顶部信息栏：高度精确 = 状态栏 + IMMERSIVE_TOP_DP，与 scrollView.paddingTop 严格对齐
+        val headerH = statusH + (IMMERSIVE_TOP_DP * density + 0.5f).toInt()
+        val footerH = navH   + (IMMERSIVE_BOT_DP * density + 0.5f).toInt()
         binding.immersiveHeaderBar.apply {
             setBackgroundColor(bgColor)
-            setPadding(horizPad, statusH + (4 * density + 0.5f).toInt(),
-                       horizPad, (8 * density + 0.5f).toInt())
+            layoutParams.height = headerH
+            requestLayout()
+            setPadding(horizPad, statusH, horizPad, 0)
             visibility = View.VISIBLE
         }
         binding.tvImmersiveChapterHeader.apply {
@@ -624,11 +611,12 @@ class ReaderActivity : AppCompatActivity() {
         binding.tvImmersiveTime.setTextColor(textColor)
         binding.ivImmersiveBack.imageTintList = ColorStateList.valueOf(textColor)
 
-        // 底部信息栏：留出导航栏/手势指示条高度 + 充足底部留白
+        // 底部信息栏：高度精确 = 导航栏 + IMMERSIVE_BOT_DP，与 scrollView.paddingBottom 严格对齐
         binding.immersiveStatusBar.apply {
             setBackgroundColor(bgColor)
-            setPadding(horizPad, (8 * density + 0.5f).toInt(),
-                       horizPad, navH + (8 * density + 0.5f).toInt())
+            layoutParams.height = footerH
+            requestLayout()
+            setPadding(horizPad, 0, horizPad, navH)
             visibility = View.VISIBLE
         }
         binding.tvImmersiveProgress.setTextColor(textColor)
