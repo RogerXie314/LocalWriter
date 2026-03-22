@@ -1,177 +1,191 @@
 package com.localwriter.utils.io
 
 /**
- * 章节自动分割器
- * 针对导入的平铺文本，按主流小说章节标题正则自动拆分章节
- * 同时识别卷标题，自动分卷
+ * 章节自动分割器（成熟阅读APP方案）
+ *
+ * 核心流程（抄自番茄/掌阅/QReader）：
+ *  1. 预扫描(pre-scan)：统计每种正则在全文匹配次数 → 选出"主导模式"
+ *  2. 仅用主导模式切分，避免多模式互相干扰导致误切
+ *  3. 主导模式不存在（< 2 次）→ 按字数等分兜底
+ *  4. 后处理：合并极短章、拆分超长章、去重同名章节
  */
 object ChapterSplitter {
 
-    /** 主流章节标题正则（覆盖绝大多数网文命名习惯）*/
-    private val CHAPTER_PATTERNS = listOf(
-        Regex("""^第[零一二三四五六七八九十百千万\d]+[章节回集篇话幕][\s\S]{0,50}$"""),
-        Regex("""^[Cc]hapter\s+\d+[\s\S]{0,50}$"""),
-        Regex("""^\d{1,4}[.、．]\s*[\S][\s\S]{0,40}$"""),
-        Regex("""^(楔子|番外|序章|终章|尾声|后记|后传|序言|前言|引子)[\s\S]{0,30}$"""),
+    // ─── 候选章节模式（互斥选一）─────────────────────────────────────────
+    private val CHAPTER_CANDIDATES = listOf(
+        Regex("""^第[零一二三四五六七八九十百千万\d]+[章节回集篇话幕].{0,40}$"""),
+        Regex("""^[Cc]hapter\s+\d+.{0,40}$"""),
+        Regex("""^\d{1,4}[.、．]\s*\S.{0,35}$"""),
+        Regex("""^(楔子|番外|序章|终章|尾声|后记|后传|序言|前言|引子).{0,25}$"""),
     )
 
-    /** 卷标题正则（第X卷 / 第X部 / 上中下部 / 卷一等）*/
+    // ─── 卷模式（始终全量检测）────────────────────────────────────────────
     private val VOLUME_PATTERNS = listOf(
-        Regex("""^第[零一二三四五六七八九十百千万\d]+[卷部册][\s\S]{0,50}$"""),
-        Regex("""^[（(][上中下前后][）)]\s*[\s\S]{0,40}$"""),
-        Regex("""^(上+部|中+部|下+部|卷[一二三四五六七八九十]+)[\s\S]{0,40}$"""),
-        Regex("""^Volume\s+\d+[\s\S]{0,50}$"""),
-        Regex("""^Book\s+\d+[\s\S]{0,50}$"""),
+        Regex("""^第[零一二三四五六七八九十百千万\d]+[卷部册].{0,40}$"""),
+        Regex("""^[（(][上中下前后][）)]\s*.{0,35}$"""),
+        Regex("""^(上+部|中+部|下+部|卷[一二三四五六七八九十]+).{0,35}$"""),
+        Regex("""^Volume\s+\d+.{0,40}$"""),
+        Regex("""^Book\s+\d+.{0,40}$"""),
     )
+
+    // 兜底按字数切分的默认段长
+    private const val SIZE_SPLIT_CHARS  = 3_000
+    // 合并阈值：正文 < 此长度则并入上一章
+    private const val MERGE_MIN_CHARS   = 80
+    // 单章上限（SQLite CursorWindow）
+    private const val MAX_CHAPTER_CHARS = 25_000
 
     data class SplitChapter(
         val title: String,
         val content: String,
-        /** 所属卷标题；null 表示使用默认卷或维持上一卷 */
         val volumeTitle: String? = null
     )
 
-    /**
-     * 将文本按章节/卷标题分割
-     * @param text 完整小说文本
-     * @param bookTitle 书名（用于无法分割时的单章模式）
-     */
+    // ═══════════════════════════════════════════════════════════════
+    //  公开入口
+    // ═══════════════════════════════════════════════════════════════
+
     fun split(text: String, bookTitle: String = "正文"): List<SplitChapter> {
         val lines = text.lines()
-        val result = mutableListOf<SplitChapter>()
 
+        // ① 预扫描 → 主导模式
+        val dominant = findDominantPattern(lines)
+
+        // ② 按模式切分
+        val raw = if (dominant != null) {
+            doSplit(lines, dominant)
+        } else {
+            doSplit(lines, null)   // 用全量模式（含特殊词）尝试一次
+        }
+
+        // ③ 不够 2 章 → 按字数等分兜底
+        val chapters = if (raw.size >= 2) raw else sizeBasedSplit(text, bookTitle)
+
+        // ④ 后处理流水线
+        return chapters
+            .let { mergeShort(it, bookTitle) }
+            .let { splitOversized(it) }
+            .let { deduplicateTitles(it) }
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    //  预扫描：选出出现次数最多的模式
+    // ═══════════════════════════════════════════════════════════════
+
+    private fun findDominantPattern(lines: List<String>): Regex? {
+        var best: Regex? = null
+        var bestCount = 0
+        for (pattern in CHAPTER_CANDIDATES) {
+            val count = lines.count { isHeadingLine(it.trim(), pattern) }
+            if (count > bestCount) { bestCount = count; best = pattern }
+        }
+        return if (bestCount >= 2) best else null
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    //  核心切分（dominant = null 时退回全量模式）
+    // ═══════════════════════════════════════════════════════════════
+
+    private fun doSplit(lines: List<String>, dominant: Regex?): List<SplitChapter> {
+        val result = mutableListOf<SplitChapter>()
         var currentTitle       = ""
         var currentVolumeTitle: String? = null
         val currentContent     = StringBuilder()
         var foundChapter       = false
         val prefaceContent     = StringBuilder()
-        var pendingVolumeTitle: String? = null  // 遇到卷标题后暂存，等下一章用
+        var pendingVolumeTitle: String? = null
+
+        fun flush(vol: String?) {
+            val content = currentContent.toString().trim()
+            if (currentTitle.isNotEmpty() || content.isNotEmpty()) {
+                result.add(SplitChapter(currentTitle.ifEmpty { "章节 ${result.size + 1}" }, content, vol))
+            }
+            currentTitle = ""
+            currentContent.clear()
+        }
 
         for (line in lines) {
             val trimmed = line.trim()
-
             when {
-                // ─── 卷标题 ───────────────────────────────────────
                 isVolumeTitle(trimmed) -> {
-                    // 先保存当前章节
-                    if (foundChapter) {
-                        val content = currentContent.toString().trim()
-                        if (currentTitle.isNotEmpty() || content.isNotEmpty()) {
-                            result.add(SplitChapter(
-                                currentTitle.ifEmpty { "章节 ${result.size}" },
-                                content,
-                                currentVolumeTitle
-                            ))
-                        }
-                        currentTitle = ""
-                        currentContent.clear()
-                    }
+                    if (foundChapter) flush(currentVolumeTitle)
                     pendingVolumeTitle = trimmed
                 }
-
-                // ─── 章节标题 ─────────────────────────────────────
-                isChapterTitle(trimmed) -> {
+                isChapterLine(trimmed, dominant) -> {
                     if (!foundChapter) {
                         val preface = prefaceContent.toString().trim()
-                        if (preface.isNotEmpty()) {
-                            result.add(SplitChapter("前言", preface, null))
-                        }
+                        if (preface.isNotEmpty()) result.add(SplitChapter("前言", preface, null))
                         foundChapter = true
                     } else {
-                        val content = currentContent.toString().trim()
-                        if (currentTitle.isNotEmpty() || content.isNotEmpty()) {
-                            result.add(SplitChapter(
-                                currentTitle.ifEmpty { "章节 ${result.size}" },
-                                content,
-                                currentVolumeTitle
-                            ))
-                        }
+                        flush(currentVolumeTitle)
                     }
-                    // 切换卷
                     if (pendingVolumeTitle != null) {
-                        currentVolumeTitle = pendingVolumeTitle
-                        pendingVolumeTitle = null
+                        currentVolumeTitle = pendingVolumeTitle; pendingVolumeTitle = null
                     }
                     currentTitle = trimmed
                     currentContent.clear()
                 }
-
-                // ─── 正文 ─────────────────────────────────────────
                 else -> {
-                    if (foundChapter) {
-                        if (trimmed.isNotEmpty()) {
-                            currentContent.append(trimmed).append("\n")
-                        } else if (currentContent.isNotEmpty() && !currentContent.endsWith("\n\n")) {
-                            // 最多保留一个空行，避免多个连续空行造成大段空白
-                            currentContent.append("\n")
-                        }
-                    } else {
-                        if (trimmed.isNotEmpty()) {
-                            prefaceContent.append(trimmed).append("\n")
-                        } else if (prefaceContent.isNotEmpty() && !prefaceContent.endsWith("\n\n")) {
-                            prefaceContent.append("\n")
-                        }
+                    val buf = if (foundChapter) currentContent else prefaceContent
+                    if (trimmed.isNotEmpty()) {
+                        buf.append(trimmed).append("\n")
+                    } else if (buf.isNotEmpty() && !buf.endsWith("\n\n")) {
+                        buf.append("\n")
                     }
                 }
             }
         }
-
         // 保存最后一章
-        val lastContent = currentContent.toString().trim()
-        if (currentTitle.isNotEmpty() || lastContent.isNotEmpty()) {
-            result.add(SplitChapter(
-                currentTitle.ifEmpty { "章节 ${result.size + 1}" },
-                lastContent,
-                currentVolumeTitle
-            ))
-        }
+        flush(currentVolumeTitle)
+        return result
+    }
 
-        // 如果一个章节都没找到，整本作为一章
-        if (result.isEmpty()) {
-            result.add(SplitChapter(bookTitle, text.trim(), null))
-        }
+    // ═══════════════════════════════════════════════════════════════
+    //  兜底：按字数等分（无章节标记时）
+    // ═══════════════════════════════════════════════════════════════
 
-        // ── 后处理：合并内容过短（< 80字）的章节到上一章 ─────────────────
-        // 避免错误地把编号列表行（如"1. 走进大厅"）当作章节标题
-        val cleaned = mutableListOf<SplitChapter>()
-        for (ch in result) {
-            val len = ch.content.trim().length
-            if (len < 80 && cleaned.isNotEmpty()) {
-                // 将此章的标题和内容并入上一章末尾
-                val prev = cleaned.last()
-                val appended = buildString {
+    private fun sizeBasedSplit(text: String, bookTitle: String): List<SplitChapter> {
+        val cleaned = text.trim()
+        if (cleaned.length <= SIZE_SPLIT_CHARS) return listOf(SplitChapter(bookTitle, cleaned, null))
+        val chunks = cleaned.chunked(SIZE_SPLIT_CHARS)
+        return chunks.mapIndexed { i, chunk ->
+            SplitChapter("第 ${i + 1} 节", chunk, null)
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    //  后处理
+    // ═══════════════════════════════════════════════════════════════
+
+    /** 合并正文过短（< MERGE_MIN_CHARS）的章节到上一章末尾 */
+    private fun mergeShort(chapters: List<SplitChapter>, bookTitle: String): List<SplitChapter> {
+        val result = mutableListOf<SplitChapter>()
+        for (ch in chapters) {
+            if (ch.content.trim().length < MERGE_MIN_CHARS && result.isNotEmpty()) {
+                val prev = result.last()
+                val merged = buildString {
                     append(prev.content.trimEnd())
                     if (ch.title.isNotEmpty()) append("\n${ch.title}")
                     if (ch.content.trim().isNotEmpty()) append("\n${ch.content.trim()}")
                 }
-                cleaned[cleaned.size - 1] = prev.copy(content = appended)
+                result[result.size - 1] = prev.copy(content = merged)
             } else {
-                cleaned.add(ch)
+                result.add(ch)
             }
         }
-
-        val base = cleaned.ifEmpty { listOf(SplitChapter(bookTitle, text.trim(), null)) }
-        return splitOversized(base)
+        return result.ifEmpty { listOf(SplitChapter(bookTitle, chapters.joinToString("\n") { it.content }, null)) }
     }
 
-    /** SQLite CursorWindow 默认 2MB；限制单章最多 25,000 字（≈75KB），杜绝行溢出 */
-    private const val MAX_CHAPTER_CONTENT = 25_000
-
-    /**
-     * 对超出 MAX_CHAPTER_CONTENT 的章节进行二次切分，每段保留原章节的卷归属。
-     * 切分后的子章标题格式：「原标题（1/n）」「原标题（2/n）」……
-     * 若只需切一段（正好在限制内），不加编号后缀，保留原标题。
-     */
+    /** 拆分超长章节（> MAX_CHAPTER_CHARS） */
     private fun splitOversized(chapters: List<SplitChapter>): List<SplitChapter> {
         val result = mutableListOf<SplitChapter>()
         for (ch in chapters) {
-            if (ch.content.length <= MAX_CHAPTER_CONTENT) {
+            if (ch.content.length <= MAX_CHAPTER_CHARS) {
                 result.add(ch)
             } else {
-                val parts = ch.content.chunked(MAX_CHAPTER_CONTENT)
+                val parts = ch.content.chunked(MAX_CHAPTER_CHARS)
                 parts.forEachIndexed { idx, part ->
-                    val title = if (parts.size == 1) ch.title
-                                else "${ch.title}（${idx + 1}/${parts.size}）"
+                    val title = if (parts.size == 1) ch.title else "${ch.title}（${idx + 1}/${parts.size}）"
                     result.add(ch.copy(title = title, content = part))
                 }
             }
@@ -179,9 +193,39 @@ object ChapterSplitter {
         return result
     }
 
-    private fun isChapterTitle(line: String): Boolean {
+    /**
+     * 同名章节去重（成熟APP核心处理）
+     * 同一标题出现多次时，第1次保持原名，后续追加序号（2）（3）……
+     */
+    private fun deduplicateTitles(chapters: List<SplitChapter>): List<SplitChapter> {
+        val freq    = chapters.groupingBy { it.title }.eachCount()
+        val counter = mutableMapOf<String, Int>()
+        return chapters.map { ch ->
+            if ((freq[ch.title] ?: 1) > 1) {
+                val n = (counter[ch.title] ?: 1)
+                counter[ch.title] = n + 1
+                ch.copy(title = if (n == 1) ch.title else "${ch.title}（$n）")
+            } else ch
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    //  辅助判断
+    // ═══════════════════════════════════════════════════════════════
+
+    /** 是否为章节标题行（dominant == null 时用全量模式） */
+    private fun isChapterLine(line: String, dominant: Regex?): Boolean {
         if (line.isBlank() || line.length > 60) return false
-        return CHAPTER_PATTERNS.any { it.matches(line) }
+        return if (dominant != null) {
+            dominant.matches(line)
+        } else {
+            CHAPTER_CANDIDATES.any { it.matches(line) }
+        }
+    }
+
+    private fun isHeadingLine(line: String, pattern: Regex): Boolean {
+        if (line.isBlank() || line.length > 60) return false
+        return pattern.matches(line)
     }
 
     private fun isVolumeTitle(line: String): Boolean {
