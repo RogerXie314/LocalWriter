@@ -153,6 +153,12 @@ copies or substantial portions of the Software.
 
 ## 📋 更新日志
 
+### v1.6.14（2026-03）
+
+- 重构导入分章器，预扫描主导模式+去重同名章节
+
+---
+
 ### v1.6.13（2026-03）
 
 - 重构阅读器，采用 PagedTextView 彻底消除翻页闪烁
