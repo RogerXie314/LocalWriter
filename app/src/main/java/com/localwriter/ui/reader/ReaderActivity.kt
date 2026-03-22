@@ -101,7 +101,7 @@ class ReaderActivity : AppCompatActivity() {
         private const val KEY_BG_COLOR_IDX  = "bg_color_idx"
         private const val KEY_FONT_FAMILY   = "font_family"
         private const val INFO_TOP_DP  = 44f
-        private const val INFO_BOT_DP  = 8f
+        private const val INFO_BOT_DP  = 32f
         private val SPACINGS = floatArrayOf(1.2f, 1.55f, 1.85f, 2.2f)
         private val BG_COLORS = intArrayOf(
             0xFFFFFFFF.toInt(), 0xFFF8F3E3.toInt(), 0xFFEEE9DE.toInt(),

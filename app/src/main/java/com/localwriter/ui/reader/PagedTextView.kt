@@ -306,20 +306,20 @@ class PagedTextView @JvmOverloads constructor(
         val startLine = pageBreaks[p]
         val endLine   = if (p + 1 < pageBreaks.size) pageBreaks[p + 1] else sl.lineCount
         val startY    = sl.getLineTop(startLine).toFloat()
-        val pageH     = (height - contentPaddingTop - contentPaddingBottom).toFloat()
+        // 用精确行边界裁剪，避免同一行出现在相邻两页（重复行问题）
+        val endY      = if (p + 1 < pageBreaks.size) sl.getLineTop(endLine).toFloat()
+                        else sl.getLineBottom(endLine - 1).toFloat()
 
         canvas.save()
-        // 平移使 startLine 的顶部恰好落在 contentPaddingTop
         canvas.translate(
             contentPaddingHoriz.toFloat(),
             contentPaddingTop.toFloat() - startY
         )
-        // 裁剪到本页文字区域（StaticLayout.draw 会画所有行，clip 限制范围）
         canvas.clipRect(
             -contentPaddingHoriz.toFloat(),
             startY,
             (width - contentPaddingHoriz).toFloat(),
-            startY + pageH
+            endY
         )
         sl.draw(canvas)
         canvas.restore()

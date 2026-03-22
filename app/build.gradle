@@ -116,11 +116,9 @@ android {
 }
 
 configurations.configureEach {
-    resolutionStrategy {
-        force 'net.sf.kxml:kxml2:2.3.0'
-    }
     exclude group: 'xmlpull', module: 'xmlpull'
     exclude group: 'xpp3', module: 'xpp3'
+    exclude group: 'net.sf.kxml', module: 'kxml2'
 }
 
 dependencies {
