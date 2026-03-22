@@ -82,11 +82,11 @@ class RegisterActivity : AppCompatActivity() {
             }
         }
 
-        // 跳过登录：无密码模式
+        // 跳过登录：无密码模式，使用中文默认昵称
         binding.btnSkipAuth.setOnClickListener {
             lifecycleScope.launch {
                 val authRepo = (application as LocalWriterApp).authRepository
-                val username = "user_${System.currentTimeMillis()}"
+                val username = "我的空间"
                 val password = java.util.UUID.randomUUID().toString()
                 val userId = authRepo.register(username, password)
                 if (userId > 0) {

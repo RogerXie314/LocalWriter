@@ -79,7 +79,10 @@ class AuthActivity : AppCompatActivity() {
                     val user = state.user
                     currentUserId = user.id
                     currentUsername = user.username
-                    binding.tvUsername.text = "欢迎回来，${user.username}"
+                    // 技术性用户名（user_ 开头或纯数字）不直接显示，改用友好称呼
+                    val displayName = if (user.username.startsWith("user_") || user.username.all { it.isDigit() })
+                        "我的空间" else user.username
+                    binding.tvUsername.text = "欢迎回来，$displayName"
 
                     when (user.preferredLockType) {
                         "GESTURE" -> showGestureLogin(user.id)

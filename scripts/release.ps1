@@ -47,10 +47,17 @@ try {
     # 4. Collect git log for changelog
     $logLines = @(git log "$prevTag..HEAD" --oneline --no-merges 2>$null)
     if (-not $logLines -or $logLines.Count -eq 0) {
-        $logLines = @("- maintenance and improvements")
+        $logLines = @("维护与改进")
     }
     $nl = [System.Environment]::NewLine
-    $bulletLines = ($logLines | ForEach-Object { "- $_" }) -join $nl
+    $bulletLines = ($logLines | ForEach-Object {
+        # 去掉 7 位 hash 前缀
+        $msg = $_ -replace '^[0-9a-f]{7}\s+', ''
+        # 去掉英文 conventional commit 前缀，如 fix(reader): / feat: 等
+        $msg = $msg -replace '^(fix|feat|refactor|chore|docs|style|test|perf|ci|build)\([^)]*\):\s*', ''
+        $msg = $msg -replace '^(fix|feat|refactor|chore|docs|style|test|perf|ci|build):\s*', ''
+        "- $msg"
+    }) -join $nl
     $date = Get-Date -Format "yyyy-MM-dd"
     $changeBlock = "## [$newVer] - $date$nl$nl$bulletLines$nl"
 
@@ -76,9 +83,14 @@ try {
         $readme = Get-Content $readmePath -Raw -Encoding UTF8
         $summaryLines = @(git log "$prevTag..HEAD" --oneline --no-merges 2>$null | Select-Object -First 8)
         if (-not $summaryLines -or $summaryLines.Count -eq 0) {
-            $summaryLines = @("- maintenance and improvements")
+            $summaryLines = @("维护与改进")
         }
-        $summaryBullets = ($summaryLines | ForEach-Object { "- $_" }) -join $nl
+        $summaryBullets = ($summaryLines | ForEach-Object {
+            $msg = $_ -replace '^[0-9a-f]{7}\s+', ''
+            $msg = $msg -replace '^(fix|feat|refactor|chore|docs|style|test|perf|ci|build)\([^)]*\):\s*', ''
+            $msg = $msg -replace '^(fix|feat|refactor|chore|docs|style|test|perf|ci|build):\s*', ''
+            "- $msg"
+        }) -join $nl
         $readmeBlock = "### v$newVer（$( Get-Date -Format 'yyyy-MM' )）$nl$nl$summaryBullets$nl$nl---$nl$nl"
         $ridx = $readme.IndexOf('### v')
         if ($ridx -ge 0) {
