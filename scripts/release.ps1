@@ -16,7 +16,18 @@ try {
         Write-Error "Working tree is dirty. Commit or stash first.`n$dirty"
     }
 
-    # 2. Get current latest tag
+    # 2. Local build verification (assembleDebug)
+    Write-Host "Building debug APK locally..." -ForegroundColor Cyan
+    $buildLog = "temp\build_release.txt"
+    New-Item -ItemType Directory -Force -Path "temp" | Out-Null
+    $proc = Start-Process -FilePath "cmd.exe" -ArgumentList "/c gradlew.bat assembleDebug --no-daemon > $buildLog 2>&1" -Wait -PassThru -NoNewWindow
+    if ($proc.ExitCode -ne 0) {
+        Write-Host (Get-Content $buildLog -Tail 20 -Raw)
+        Write-Error "Local build FAILED (exit $($proc.ExitCode)). Release aborted."
+    }
+    Write-Host "Local build OK" -ForegroundColor Green
+
+    # 3. Get current latest tag
     $prevTag = (git describe --tags --abbrev=0 --match "v[0-9]*" 2>$null) -replace "`n", ""
     if (-not $prevTag) { $prevTag = "v0.0.0" }
     $prevVer = $prevTag -replace '^v', ''
