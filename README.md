@@ -153,6 +153,13 @@ copies or substantial portions of the Software.
 
 ## 📋 更新日志
 
+### v1.6.4（2026-03）
+
+- 03fe58b 淇锛欳I 鏋勫缓澶辫触鍘绘帀 buildToolsVersion 纭紪鐮侊紝宸ヤ綔娴佽ˉ鍏呭畨瑁?SDK 35 + build-tools 35
+- 4cf8422 docs: v1.6.3 鏇存柊鏃ュ織鏀逛负涓枃
+
+---
+
 ### v1.6.3（2026-03）
 
 - 修复：沉浸模式顶部信息栏改为显示书名，消除与正文章节标题的重复
