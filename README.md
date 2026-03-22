@@ -153,6 +153,13 @@ copies or substantial portions of the Software.
 
 ## 📋 更新日志
 
+### v1.6.12（2026-03）
+
+- 移除 build.yml 中的 pre-release 创建，不再覆盖正式 Release
+- 补全更新日志中的英文残留条目
+
+---
+
 ### v1.6.11（2026-03）
 
 - 跳过登录显示友好用户名，更新日志改为中文
