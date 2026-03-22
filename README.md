@@ -153,6 +153,13 @@ copies or substantial portions of the Software.
 
 ## 📋 更新日志
 
+### v1.6.5（2026-03）
+
+- 185af22 chore: release 鑴氭湰鍔犲叆鏈湴缂栬瘧楠岃瘉姝ラ
+- 008adf8 fix(reader): 娌夋蹈妯″紡椤电湁椤佃剼闆堕伄鎸★紝淇鍙岄噸閬尅鍔ㄧ敾绔炴€?b0c6320 docs: v1.6.4 鏇存柊鏃ュ織鏀逛负涓枃
+
+---
+
 ### v1.6.4（2026-03）
 
 - 修复：GitHub Actions CI 构建失败，发布页长期停在旧版本的问题
