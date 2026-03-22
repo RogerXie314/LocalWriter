@@ -54,8 +54,10 @@ try {
     $clPath = "CHANGELOG.md"
     if (Test-Path $clPath) {
         $existing = Get-Content $clPath -Raw -Encoding UTF8
-        if ($existing -match '## \[') {
-            $newContent = $existing -replace '(## \[)', "$changeBlock$nl`$1"
+        $idx = $existing.IndexOf('## [')
+        if ($idx -ge 0) {
+            # Insert only before the first ## [ entry
+            $newContent = $existing.Substring(0, $idx) + $changeBlock + $nl + $existing.Substring($idx)
         } else {
             $newContent = $changeBlock + $nl + $existing
         }
@@ -77,8 +79,9 @@ try {
         $summaryBullets = ($summaryLines | ForEach-Object { "- $_" }) -join $nl
         $readmeBlock = "### v$newVer（$( Get-Date -Format 'yyyy-MM' )）$nl$nl$summaryBullets$nl$nl---$nl$nl"
         # Insert before first "### v" entry in the changelog section
-        if ($readme -match '### v\d') {
-            $newReadme = $readme -replace '(### v\d)', "$readmeBlock`$1"
+        $ridx = $readme.IndexOf('### v')
+        if ($ridx -ge 0) {
+            $newReadme = $readme.Substring(0, $ridx) + $readmeBlock + $readme.Substring($ridx)
             [System.IO.File]::WriteAllText((Resolve-Path $readmePath), $newReadme, [System.Text.Encoding]::UTF8)
             Write-Host "README.md updated" -ForegroundColor Green
         } else {

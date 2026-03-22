@@ -64,3 +64,4 @@ jobs:
           name: "LocalWriter v${{ steps.version.outputs.name }}"
           body: ${{ steps.changelog.outputs.notes }}
           files: dist/*.apk
+          make_latest: true

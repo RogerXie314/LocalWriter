@@ -153,6 +153,15 @@ copies or substantial portions of the Software.
 
 ## 📋 更新日志
 
+### v1.6.1（2026-03）
+
+- chore: build infra — 发布流程自动化（release.ps1 + GitHub Actions release workflow）
+- fix: release script encoding
+- fix: reader control panel color matches reading skin
+- fix: add missing View import in SettingsActivity
+
+---
+
 ### v1.6.0（2026-03）
 
 **阅读器**
