@@ -31,6 +31,34 @@
         android:id="@+id/content_frame"
         android:layout_width="0dp"
         android:layout_height="match_parent"
-        android:layout_weight="1"/>
+        android:layout_weight="1"
+        android:background="@color/surface">
+
+        <!-- 未选中书籍时的占位提示 -->
+        <LinearLayout
+            android:id="@+id/empty_detail_hint"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:alpha="0.45">
+
+            <ImageView
+                android:layout_width="64dp"
+                android:layout_height="64dp"
+                android:src="@drawable/ic_open_in_new"
+                android:contentDescription="@null"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:text="从左侧选择书籍开始写作"
+                android:textSize="15sp"
+                android:textColor="@color/on_surface"/>
+
+        </LinearLayout>
+
+    </FrameLayout>
 
 </LinearLayout>
