@@ -155,8 +155,8 @@ copies or substantial portions of the Software.
 
 ### v1.6.4（2026-03）
 
-- 03fe58b 淇锛欳I 鏋勫缓澶辫触鍘绘帀 buildToolsVersion 纭紪鐮侊紝宸ヤ綔娴佽ˉ鍏呭畨瑁?SDK 35 + build-tools 35
-- 4cf8422 docs: v1.6.3 鏇存柊鏃ュ織鏀逛负涓枃
+- 修复：GitHub Actions CI 构建失败，发布页长期停在旧版本的问题
+- 修复：去掉 buildToolsVersion 硬编码（36.1.0），CI 环境与本地保持兼容
 
 ---
 
