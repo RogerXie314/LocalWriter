@@ -86,7 +86,6 @@ class ReaderActivity : AppCompatActivity() {
     private val timeHandler  = Handler(Looper.getMainLooper())
     private val timeRunnable = object : Runnable {
         override fun run() {
-            if (!barsVisible) updateImmersiveInfo()
             timeHandler.postDelayed(this, 60_000L)
         }
     }
@@ -102,7 +101,7 @@ class ReaderActivity : AppCompatActivity() {
         private const val KEY_BG_COLOR_IDX  = "bg_color_idx"
         private const val KEY_FONT_FAMILY   = "font_family"
         private const val INFO_TOP_DP  = 44f
-        private const val INFO_BOT_DP  = 36f
+        private const val INFO_BOT_DP  = 8f
         private val SPACINGS = floatArrayOf(1.2f, 1.55f, 1.85f, 2.2f)
         private val BG_COLORS = intArrayOf(
             0xFFFFFFFF.toInt(), 0xFFF8F3E3.toInt(), 0xFFEEE9DE.toInt(),
@@ -153,18 +152,9 @@ class ReaderActivity : AppCompatActivity() {
                 contentPaddingBottom = navH    + (INFO_BOT_DP * density + 0.5f).toInt()
                 binding.pagedTextView.setContentPadding(contentPaddingTop, contentPaddingBottom)
 
-                val hp = (20 * density).toInt()
-                binding.immersiveHeaderBar.layoutParams.height = contentPaddingTop
-                binding.immersiveHeaderBar.setPadding(hp, statusH, hp, 0)
-                binding.immersiveHeaderBar.requestLayout()
-
                 binding.toolbarPanel.layoutParams.height = contentPaddingTop
                 binding.toolbarPanel.setPadding((4 * density).toInt(), statusH, (4 * density).toInt(), 0)
                 binding.toolbarPanel.requestLayout()
-
-                binding.immersiveStatusBar.layoutParams.height = contentPaddingBottom
-                binding.immersiveStatusBar.setPadding(hp, 0, hp, navH)
-                binding.immersiveStatusBar.requestLayout()
 
                 showImmersiveBars()
             }
@@ -233,7 +223,7 @@ class ReaderActivity : AppCompatActivity() {
         binding.pagedTextView.onCenterTap    = { toggleBars() }
         binding.pagedTextView.onPrevChapter  = { navigateChapter(-1) }
         binding.pagedTextView.onNextChapter  = { navigateChapter(1) }
-        binding.pagedTextView.onPageChanged  = { _, _ -> updateImmersiveInfo(); updateBookmarkIndicator() }
+        binding.pagedTextView.onPageChanged  = { _, _ -> updateBookmarkIndicator() }
     }
 
     //  沉浸/控制 切换 
@@ -247,19 +237,11 @@ class ReaderActivity : AppCompatActivity() {
             .withEndAction { binding.toolbarPanel.visibility = View.GONE }.start()
         binding.bottomControlOverlay.animate().alpha(0f).setDuration(ANIM_DURATION)
             .withEndAction { binding.bottomControlOverlay.visibility = View.GONE; hideAllPanels() }.start()
-        showImmersiveBars()
-        binding.immersiveHeaderBar.alpha = 0f; binding.immersiveStatusBar.alpha = 0f
-        binding.immersiveHeaderBar.animate().alpha(1f).setDuration(ANIM_DURATION).start()
-        binding.immersiveStatusBar.animate().alpha(1f).setDuration(ANIM_DURATION).start()
         updateBookmarkIndicator()
     }
 
     private fun showBars() {
         barsVisible = true
-        binding.immersiveHeaderBar.animate().alpha(0f).setDuration(ANIM_DURATION)
-            .withEndAction { binding.immersiveHeaderBar.visibility = View.GONE }.start()
-        binding.immersiveStatusBar.animate().alpha(0f).setDuration(ANIM_DURATION)
-            .withEndAction { binding.immersiveStatusBar.visibility = View.GONE }.start()
         binding.toolbarPanel.alpha = 0f; binding.toolbarPanel.visibility = View.VISIBLE
         binding.toolbarPanel.animate().alpha(1f).setDuration(ANIM_DURATION).start()
         binding.bottomControlOverlay.alpha = 0f; binding.bottomControlOverlay.visibility = View.VISIBLE
@@ -268,18 +250,9 @@ class ReaderActivity : AppCompatActivity() {
     }
 
     private fun showImmersiveBars() {
-        val tc = currentTextColor(); val bg = currentBgColor()
-        binding.immersiveHeaderBar.setBackgroundColor(bg)
-        binding.immersiveStatusBar.setBackgroundColor(bg)
-        listOf(binding.tvImmersiveChapterHeader, binding.tvImmersiveBattery,
-               binding.tvImmersiveTime, binding.tvImmersiveProgress, binding.tvImmersiveChapterIdx)
-            .forEach { it.setTextColor(tc) }
-        binding.ivImmersiveBack.imageTintList = ColorStateList.valueOf(tc)
-        binding.immersiveHeaderBar.visibility = View.VISIBLE
-        binding.immersiveStatusBar.visibility = View.VISIBLE
         binding.toolbarPanel.visibility = View.GONE
         binding.bottomControlOverlay.visibility = View.GONE
-        updateImmersiveInfo()
+        hideAllPanels()
     }
 
     //  子面板 
@@ -304,7 +277,6 @@ class ReaderActivity : AppCompatActivity() {
 
     private fun setupControls() {
         binding.ibBack.setOnClickListener { finish() }
-        binding.ivImmersiveBack.setOnClickListener { finish() }
         binding.ibEditChapter.setOnClickListener { openEditor() }
         binding.ibChapterList.setOnClickListener { showChapterListDialog() }
         binding.ivBookmarkIndicator.setOnClickListener { toggleBookmark() }
@@ -326,7 +298,6 @@ class ReaderActivity : AppCompatActivity() {
                 v.setOnClickListener {
                     activeBgColorIdx = i; nightModeActive = (i >= 5)
                     applyBgAndText(); updateBgCircles(); updateNightButton()
-                    if (!barsVisible) showImmersiveBars()
                 }
             }
 
@@ -405,7 +376,6 @@ class ReaderActivity : AppCompatActivity() {
             }
         }
         updateBgCircles(); updateNightButton()
-        if (!barsVisible) showImmersiveBars()
     }
 
     private fun applyControlPanelTheme(bgColor: Int, textColor: Int) {
@@ -463,26 +433,6 @@ class ReaderActivity : AppCompatActivity() {
 
     private fun updateFontSizeDisplay() { binding.tvFontSizeVal.text = currentFontSize.toInt().toString() }
 
-    //  沉浸信息刷新 
-
-    private fun updateImmersiveInfo() {
-        val pv = binding.pagedTextView
-        binding.tvImmersiveChapterIdx.text = "${pv.currentPage + 1}/${pv.totalPages} 页"
-        val globalPct = if (allChapterIds.isNotEmpty()) {
-            ((currentIndex + pv.currentPageScrollPercent) / allChapterIds.size * 100).toInt().coerceIn(0, 100)
-        } else 0
-        binding.tvImmersiveProgress.text = "全书 $globalPct%"
-        binding.tvImmersiveBattery.text = "${readBatteryPct()}%"
-        val cal = java.util.Calendar.getInstance()
-        binding.tvImmersiveTime.text = String.format(java.util.Locale.getDefault(), "%02d:%02d",
-            cal.get(java.util.Calendar.HOUR_OF_DAY), cal.get(java.util.Calendar.MINUTE))
-        binding.tvImmersiveChapterHeader.text = if (bookTitle.isNotEmpty()) bookTitle else binding.tvChapterTitle.text
-        val tc = currentTextColor()
-        listOf(binding.tvImmersiveChapterHeader, binding.tvImmersiveBattery,
-               binding.tvImmersiveTime, binding.tvImmersiveProgress, binding.tvImmersiveChapterIdx)
-            .forEach { it.setTextColor(tc) }
-    }
-
     private fun readBatteryPct(): Int {
         val i = registerReceiver(null, android.content.IntentFilter(android.content.Intent.ACTION_BATTERY_CHANGED))
         val level = i?.getIntExtra(android.os.BatteryManager.EXTRA_LEVEL, -1) ?: -1
@@ -526,7 +476,7 @@ class ReaderActivity : AppCompatActivity() {
             val startPage = if (startAtEnd) 0 else chapter.lastScrollPos.coerceAtLeast(0)
             binding.pagedTextView.loadChapter(chapter.title, chapter.content.ifEmpty { "（本章暂无内容）" }, startPage)
             if (startAtEnd) binding.pagedTextView.post { binding.pagedTextView.goToLastPage() }
-            updateBookmarkIndicator(); updateImmersiveInfo()
+            updateBookmarkIndicator()
             withContext(Dispatchers.IO) { (application as LocalWriterApp).bookRepository.updateLastChapter(bookId, chapId) }
         }
     }

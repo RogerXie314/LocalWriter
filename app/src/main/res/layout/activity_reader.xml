@@ -32,60 +32,7 @@
         android:contentDescription="书签" />
 
 
-    <!--
-      沉浸顶部信息栏：[返回] [书名] [电量] [时间]
-      高度由代码设定 = statusBarHeight + 44dp（与 contentPaddingTop 完全一致）
-      翻页模式下始终可见；切换到工具栏模式时 visibility=GONE
-    -->
-    <LinearLayout
-        android:id="@+id/immersiveHeaderBar"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_gravity="top"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:paddingHorizontal="20dp"
-        android:paddingBottom="6dp"
-        android:visibility="gone">
 
-        <ImageView
-            android:id="@+id/ivImmersiveBack"
-            android:layout_width="20dp"
-            android:layout_height="20dp"
-            android:layout_marginEnd="8dp"
-            android:src="@drawable/ic_arrow_back"
-            android:scaleType="fitCenter"
-            android:alpha="0.65"
-            android:clickable="true"
-            android:focusable="true"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="返回" />
-
-        <TextView
-            android:id="@+id/tvImmersiveChapterHeader"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:maxLines="1"
-            android:ellipsize="end"
-            android:textSize="12sp"
-            android:alpha="0.65" />
-
-        <TextView
-            android:id="@+id/tvImmersiveBattery"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textSize="12sp"
-            android:alpha="0.65"
-            android:layout_marginEnd="8dp" />
-
-        <TextView
-            android:id="@+id/tvImmersiveTime"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textSize="12sp"
-            android:alpha="0.65" />
-    </LinearLayout>
 
     <!--
       工具栏面板：[返回] [章节标题] [编辑] [目录]
@@ -141,35 +88,7 @@
     </LinearLayout>
 
 
-    <!--
-      沉浸底部信息栏：[进度%] [页码]
-      高度由代码设定 = navBarHeight + 36dp（与 contentPaddingBottom 完全一致）
-    -->
-    <LinearLayout
-        android:id="@+id/immersiveStatusBar"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_gravity="bottom"
-        android:orientation="horizontal"
-        android:paddingHorizontal="20dp"
-        android:paddingTop="6dp"
-        android:visibility="gone">
 
-        <TextView
-            android:id="@+id/tvImmersiveProgress"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:textSize="12sp"
-            android:alpha="0.65" />
-
-        <TextView
-            android:id="@+id/tvImmersiveChapterIdx"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textSize="12sp"
-            android:alpha="0.65" />
-    </LinearLayout>
 
     <!-- 底部控制面板 -->
     <LinearLayout

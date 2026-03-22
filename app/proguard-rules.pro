@@ -62,6 +62,14 @@
 -keep class com.google.gson.** { *; }
 
 # ——————————————————————————————————————
+# XmlPull（epublib/kxml2 依赖，解决 R8 报错）
+# ——————————————————————————————————————
+-keep class org.xmlpull.v1.** { *; }
+-dontwarn org.xmlpull.v1.**
+-keep class org.kxml2.** { *; }
+-dontwarn org.kxml2.**
+
+# ——————————————————————————————————————
 # ViewBinding
 # ——————————————————————————————————————
 -keep class com.localwriter.databinding.** { *; }
