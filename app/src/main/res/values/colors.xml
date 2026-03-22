@@ -16,4 +16,14 @@
     <color name="status_ongoing">#2E7D32</color>
     <color name="status_finished">#1565C0</color>
     <color name="status_paused">#E65100</color>
+
+    <!-- night_* 日间回退值：仅用于满足 Lint MissingDefaultResource 检测，
+         实际以 values-night/colors.xml 中的夜间值为准 -->
+    <color name="night_primary">#1E3A5F</color>
+    <color name="night_primary_container">#BBDEFB</color>
+    <color name="night_on_primary_container">#0D47A1</color>
+    <color name="night_surface">#FFFFFF</color>
+    <color name="night_on_surface">#333333</color>
+    <color name="night_surface_variant">#F5F5F5</color>
+    <color name="night_background">#F8F9FA</color>
 </resources>
