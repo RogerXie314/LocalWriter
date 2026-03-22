@@ -60,21 +60,4 @@ jobs:
           path: dist/*.apk
           retention-days: 14
 
-      - name: Create GitHub Release (main branch only)
-        if: github.ref == 'refs/heads/main'
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ steps.version.outputs.tag }}
-          name: LocalWriter ${{ steps.version.outputs.name }}
-          body: |
-            🤖 自动构建 Debug APK
-            
-            **Commit**: ${{ github.sha }}
-            **Branch**: ${{ github.ref_name }}
-            **Build time**: ${{ github.event.head_commit.timestamp }}
-            
-            > 安装前需在手机「设置 → 安全」中开启「允许安装未知来源应用」。
-          files: dist/*.apk
-          prerelease: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
