@@ -485,7 +485,7 @@ class ReaderActivity : AppCompatActivity() {
 
         // 工具栏从顶部滑入（覆盖在 scrollView 上方，不推挤内容）
         binding.appBarLayout.apply {
-            val startY = -(height.takeIf { it > 0 } ?: estimatedToolbarH).toFloat()
+            val startY = -(height.takeIf { it > 0 } ?: binding.scrollView.paddingTop).toFloat()
             alpha = 0f
             translationY = startY
             visibility = View.VISIBLE

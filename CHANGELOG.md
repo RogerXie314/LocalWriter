@@ -1,5 +1,9 @@
 ﻿# Changelog
 
+## [1.6.10] - 2026-03-22
+
+- 5e8abe7 fix(reader): freeze content area - toolbar/immersive bars overlay only, never reflow
+
 ## [1.6.9] - 2026-03-22
 
 - 1b99b15 fix(reader): always-hidden system bars, eliminate fullscreen flash on toggle

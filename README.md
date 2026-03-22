@@ -153,6 +153,12 @@ copies or substantial portions of the Software.
 
 ## 📋 更新日志
 
+### v1.6.10（2026-03）
+
+- 5e8abe7 fix(reader): freeze content area - toolbar/immersive bars overlay only, never reflow
+
+---
+
 ### v1.6.9（2026-03）
 
 - 1b99b15 fix(reader): always-hidden system bars, eliminate fullscreen flash on toggle
