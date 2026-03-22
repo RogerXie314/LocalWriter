@@ -1,5 +1,12 @@
 ﻿# Changelog
 
+## [1.6.2] - 2026-03-22
+
+- aaf07ea fix: CursorWindow overflow on large chapter import and auth screen flash
+- fe91ee4 fix: two-pane layout black right pane  add background and empty-state hint
+- 7cd4b4e fix: changelog dedup, readme v1.6.1 entry, release make_latest, script insert-once
+- 0b44b6b feat: release script also updates README changelog section
+
 ## [1.6.1] - 2026-03-22
 
 - fix: release script encoding
