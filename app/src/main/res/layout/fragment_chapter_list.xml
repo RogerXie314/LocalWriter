@@ -15,7 +15,8 @@
         app:navigationIcon="@drawable/ic_arrow_back"
         app:navigationContentDescription="返回书籍列表"
         app:menu="@menu/menu_chapter_list"
-        app:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"/>
+        app:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
+        app:popupTheme="@style/ThemeOverlay.AppCompat.Light"/>
 
     <!-- 章节列表与空状态叠层，空状态垂直居中 -->
     <FrameLayout

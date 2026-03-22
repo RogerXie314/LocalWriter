@@ -579,6 +579,42 @@ class ReaderActivity : AppCompatActivity() {
     }
 
     /**
+     * 等下一次 layout pass 完成后，调整 scrollView paddingBottom，使 pageHeight 是整行高的倍数：
+     * - 消除底部半行：最后一行不再被截断
+     * - 额外保留 1 行空白：与底部信息栏之间有呼吸感
+     */
+    private fun scheduleAlignPadding() {
+        binding.scrollView.viewTreeObserver.addOnGlobalLayoutListener(
+            object : android.view.ViewTreeObserver.OnGlobalLayoutListener {
+                override fun onGlobalLayout() {
+                    binding.scrollView.viewTreeObserver.removeOnGlobalLayoutListener(this)
+                    alignPaddingToLines()
+                }
+            }
+        )
+    }
+
+    private fun alignPaddingToLines() {
+        val layout = binding.tvContent.layout ?: return
+        if (layout.lineCount < 2) return
+        val lineH = layout.getLineBottom(0) - layout.getLineTop(0)
+        if (lineH <= 0) return
+        val sv = binding.scrollView
+        val density = resources.displayMetrics.density
+        val navH = if (systemNavBarHeight > 0) systemNavBarHeight else 0
+        // 底部信息栏基准高度（与 showImmersiveChapterHeader 保持一致）
+        val baseBot = navH + (IMMERSIVE_BOT_DP * density + 0.5f).toInt()
+        val pageH = sv.height - sv.paddingTop - baseBot
+        // 消除底部半行余量，再额外留 1 整行空白
+        val remainder = pageH % lineH
+        val halfLineFix = if (remainder == 0) 0 else lineH - remainder
+        val newBot = baseBot + halfLineFix + lineH
+        if (sv.paddingBottom != newBot) {
+            sv.setPadding(sv.paddingLeft, sv.paddingTop, sv.paddingRight, newBot)
+        }
+    }
+
+    /**
      * 显示沉浸模式顶部/底部信息栏并填充内容到显示状态（visibility=VISIBLE）。
      * 调用方在需要淡入时可用 alpha=0 → animate(1f)；直接显示时直接调用即可。
      */
@@ -682,6 +718,7 @@ class ReaderActivity : AppCompatActivity() {
         currentSpacingIdx = idx
         binding.tvContent.setLineSpacing(0f, SPACINGS[idx])
         updateSpacingButtonStates()
+        scheduleAlignPadding()
     }
 
     private fun updateSpacingButtonStates() {
@@ -827,26 +864,31 @@ class ReaderActivity : AppCompatActivity() {
         }
     }
 
-    /** 更新沉浸模式顶部（电量 + 时间）和底部（阅读进度% + 章节 x/n）信息栏 */
+    /** 更新沉浸模式顶部（电量 + 时间）和底部（阅读进度% + 当前页/总页 数）信息栏 */
     private fun updateImmersiveInfo() {
-        val total = allChapterIds.size
-        val chapterText = if (total > 0) "${currentIndex + 1}/$total 章" else "-/-"
+        // 当前章节内 页码 / 总页数
+        val sv = binding.scrollView
+        val child = sv.getChildAt(0)
+        val pageH = getPageHeight()
+        val pageText = if (child != null && pageH > 0) {
+            val maxScroll = (child.measuredHeight + sv.paddingTop + sv.paddingBottom - sv.height).coerceAtLeast(0)
+            val currentPage = (sv.scrollY / pageH) + 1
+            val totalPages  = (maxScroll / pageH) + 1
+            "$currentPage/$totalPages 页"
+        } else "-/- 页"
 
-        // 全书阅读进度（而非章节内进度，避免短章节时进度跳动过大）
-        val child = binding.scrollView.getChildAt(0)
+        // 全书阅读进度
         val progressText = if (child != null && allChapterIds.isNotEmpty()) {
-            val maxScroll = (child.height - binding.scrollView.height).coerceAtLeast(1)
-            val withinPct = ((binding.scrollView.scrollY.toFloat() / maxScroll) * 100)
-                .toInt().coerceIn(0, 100)
-            val total = allChapterIds.size
-            val globalPct = ((currentIndex + withinPct / 100.0) / total * 100)
+            val maxScroll = (child.height + sv.paddingTop + sv.paddingBottom - sv.height).coerceAtLeast(1)
+            val withinPct = ((sv.scrollY.toFloat() / maxScroll) * 100).toInt().coerceIn(0, 100)
+            val globalPct = ((currentIndex + withinPct / 100.0) / allChapterIds.size * 100)
                 .toInt().coerceIn(0, 100)
             "全书 $globalPct%"
         } else "全书 0%"
 
-        // 底部：全书进度% 左 / 章节 x/n 右
+        // 底部：全书进度% 左 / 页码 右
         binding.tvImmersiveProgress.text = progressText
-        binding.tvImmersiveChapterIdx.text = chapterText
+        binding.tvImmersiveChapterIdx.text = pageText
 
         // 顶部右侧：电量 + 时间
         binding.tvImmersiveBattery.text = "${readBatteryPct()}%"
@@ -880,7 +922,10 @@ class ReaderActivity : AppCompatActivity() {
     }
 
     private fun applyFontSize() {
-        if (currentFontSize > 0f) binding.tvContent.textSize = currentFontSize
+        if (currentFontSize > 0f) {
+            binding.tvContent.textSize = currentFontSize
+            scheduleAlignPadding()
+        }
     }
 
     private fun applyCurrentSpacing() {
@@ -980,6 +1025,8 @@ class ReaderActivity : AppCompatActivity() {
             binding.tvContent.text = indented
             applyFontSize()
             applyCurrentSpacing()
+            // 内容/字号/行距变更后，重新对齐底部 padding 以消除半行
+            scheduleAlignPadding()
 
             val total = allChapterIds.size
             binding.tvChapterProgress.text = "${currentIndex + 1} / $total 章"
@@ -1044,8 +1091,8 @@ class ReaderActivity : AppCompatActivity() {
             if (currentY >= maxScroll - SCROLL_TOLERANCE) {
                 navigateChapter(1)
             } else {
-                // 每次翻页前进 90%，保留上页最后 10% 内容作为过渡，阅读不迷失
-                val rawTarget = (currentY + pageHeight * 9 / 10).coerceAtMost(maxScroll)
+                // 每次整页翻进：完整一页，配合 snapToLineTop 保证起始行对齐，底部无半行
+                val rawTarget = (currentY + pageHeight).coerceAtMost(maxScroll)
                 val targetY   = snapToLineTop(rawTarget)
                 // snapToLineTop 可能将目标回退到当前位置（已处于最后一行），此时直接翻章
                 if (targetY <= currentY + SCROLL_TOLERANCE) {
@@ -1059,7 +1106,7 @@ class ReaderActivity : AppCompatActivity() {
             if (currentY <= SCROLL_TOLERANCE) {
                 navigateChapter(-1)
             } else {
-                val rawTarget = (currentY - pageHeight * 9 / 10).coerceAtLeast(0)
+                val rawTarget = (currentY - pageHeight).coerceAtLeast(0)
                 val targetY   = snapToLineTop(rawTarget)
                 if (pageMode == 1) slideAnimatePage(targetY, direction)
                 else sv.smoothScrollTo(0, targetY)
