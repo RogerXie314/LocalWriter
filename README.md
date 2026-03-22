@@ -153,6 +153,12 @@ copies or substantial portions of the Software.
 
 ## 📋 更新日志
 
+### v1.6.17（2026-03）
+
+- 修复翻页重复行，增大底部留白，修复 R8 kxml2 冲突
+
+---
+
 ### v1.6.16（2026-03）
 
 - 删除阅读模式遮挡页眉页脚，修复 R8 xmlpull 构建失败
