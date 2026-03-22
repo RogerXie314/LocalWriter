@@ -153,6 +153,12 @@ copies or substantial portions of the Software.
 
 ## 📋 更新日志
 
+### v1.6.21（2026-03）
+
+- 正文 xxx 章节格式识别，添加间距合理性校验防误匹配
+
+---
+
 ### v1.6.20（2026-03）
 
 - 禁用 lint 阻断 release 构建，防止 lintVitalRelease 卡死发布流程
