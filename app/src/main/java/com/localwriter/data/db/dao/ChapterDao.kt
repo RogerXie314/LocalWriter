@@ -35,6 +35,15 @@ interface ChapterDao {
     @Query("SELECT * FROM chapters WHERE volumeId = :volumeId AND status != 'DELETED' ORDER BY sortOrder ASC")
     suspend fun getAllByVolume(volumeId: Long): List<Chapter>
 
+    /** 一次性获取某卷章节预览列表（不含正文，suspend 版，避免 CursorWindow 溢出）*/
+    @Query("""
+        SELECT id, bookId, volumeId, title, wordCount, status, sortOrder, updatedAt
+        FROM chapters
+        WHERE volumeId = :volumeId AND status != 'DELETED'
+        ORDER BY sortOrder ASC
+    """)
+    suspend fun getPreviewsByVolume(volumeId: Long): List<ChapterPreview>
+
     /** 观察某卷的章节列表（导航栏使用，不含正文）*/
     @Query("""
         SELECT id, bookId, volumeId, title, wordCount, status, sortOrder, updatedAt

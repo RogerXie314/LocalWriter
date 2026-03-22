@@ -150,7 +150,33 @@ object ChapterSplitter {
             }
         }
 
-        return cleaned.ifEmpty { listOf(SplitChapter(bookTitle, text.trim(), null)) }
+        val base = cleaned.ifEmpty { listOf(SplitChapter(bookTitle, text.trim(), null)) }
+        return splitOversized(base)
+    }
+
+    /** SQLite CursorWindow 默认 2MB；限制单章最多 25,000 字（≈75KB），杜绝行溢出 */
+    private const val MAX_CHAPTER_CONTENT = 25_000
+
+    /**
+     * 对超出 MAX_CHAPTER_CONTENT 的章节进行二次切分，每段保留原章节的卷归属。
+     * 切分后的子章标题格式：「原标题（1/n）」「原标题（2/n）」……
+     * 若只需切一段（正好在限制内），不加编号后缀，保留原标题。
+     */
+    private fun splitOversized(chapters: List<SplitChapter>): List<SplitChapter> {
+        val result = mutableListOf<SplitChapter>()
+        for (ch in chapters) {
+            if (ch.content.length <= MAX_CHAPTER_CONTENT) {
+                result.add(ch)
+            } else {
+                val parts = ch.content.chunked(MAX_CHAPTER_CONTENT)
+                parts.forEachIndexed { idx, part ->
+                    val title = if (parts.size == 1) ch.title
+                                else "${ch.title}（${idx + 1}/${parts.size}）"
+                    result.add(ch.copy(title = title, content = part))
+                }
+            }
+        }
+        return result
     }
 
     private fun isChapterTitle(line: String): Boolean {

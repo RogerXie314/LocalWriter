@@ -39,13 +39,14 @@
                 android:id="@+id/tvChapterTitle"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:paddingTop="20dp"
-                android:paddingBottom="8dp"
+                android:paddingTop="28dp"
+                android:paddingBottom="10dp"
                 android:paddingHorizontal="20dp"
-                android:textSize="15sp"
-                android:textStyle="normal"
+                android:textSize="17sp"
+                android:textStyle="bold"
                 android:gravity="start"
-                android:textColor="?android:attr/textColorSecondary" />
+                android:lineSpacingMultiplier="1.4"
+                android:textColor="?android:attr/textColorPrimary" />
 
             <View
                 android:layout_width="match_parent"
@@ -108,25 +109,25 @@
             android:layout_weight="1"
             android:maxLines="1"
             android:ellipsize="end"
-            android:textSize="11sp"
-            android:alpha="0.72" />
+            android:textSize="12sp"
+            android:alpha="0.65" />
 
         <!-- 电量百分比（右侧） -->
         <TextView
             android:id="@+id/tvImmersiveBattery"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textSize="11sp"
-            android:alpha="0.72"
-            android:layout_marginEnd="10dp" />
+            android:textSize="12sp"
+            android:alpha="0.65"
+            android:layout_marginEnd="8dp" />
 
         <!-- 当前时间（右侧最末） -->
         <TextView
             android:id="@+id/tvImmersiveTime"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textSize="11sp"
-            android:alpha="0.72" />
+            android:textSize="12sp"
+            android:alpha="0.65" />
 
     </LinearLayout>
 
@@ -151,16 +152,16 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:textSize="11sp"
-            android:alpha="0.72" />
+            android:textSize="12sp"
+            android:alpha="0.65" />
 
         <!-- 章节编号 x/n（右） -->
         <TextView
             android:id="@+id/tvImmersiveChapterIdx"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textSize="11sp"
-            android:alpha="0.72" />
+            android:textSize="12sp"
+            android:alpha="0.65" />
 
     </LinearLayout>
 
@@ -327,36 +328,50 @@
                     android:textColor="?android:attr/textColorSecondary" />
 
                 <View android:id="@+id/vBgWhite"
-                    android:layout_width="36dp"
-                    android:layout_height="36dp"
-                    android:layout_marginEnd="10dp"
+                    android:layout_width="30dp"
+                    android:layout_height="30dp"
+                    android:layout_marginEnd="8dp"
                     android:clickable="true"
                     android:focusable="true" />
 
                 <View android:id="@+id/vBgCream"
-                    android:layout_width="36dp"
-                    android:layout_height="36dp"
-                    android:layout_marginEnd="10dp"
+                    android:layout_width="30dp"
+                    android:layout_height="30dp"
+                    android:layout_marginEnd="8dp"
                     android:clickable="true"
                     android:focusable="true" />
 
                 <View android:id="@+id/vBgWarm"
-                    android:layout_width="36dp"
-                    android:layout_height="36dp"
-                    android:layout_marginEnd="10dp"
+                    android:layout_width="30dp"
+                    android:layout_height="30dp"
+                    android:layout_marginEnd="8dp"
                     android:clickable="true"
                     android:focusable="true" />
 
                 <View android:id="@+id/vBgGreen"
-                    android:layout_width="36dp"
-                    android:layout_height="36dp"
-                    android:layout_marginEnd="10dp"
+                    android:layout_width="30dp"
+                    android:layout_height="30dp"
+                    android:layout_marginEnd="8dp"
                     android:clickable="true"
                     android:focusable="true" />
 
-                <View android:id="@+id/vBgDark"
-                    android:layout_width="36dp"
-                    android:layout_height="36dp"
+                <View android:id="@+id/vBgWarmYellow"
+                    android:layout_width="30dp"
+                    android:layout_height="30dp"
+                    android:layout_marginEnd="8dp"
+                    android:clickable="true"
+                    android:focusable="true" />
+
+                <View android:id="@+id/vBgNight"
+                    android:layout_width="30dp"
+                    android:layout_height="30dp"
+                    android:layout_marginEnd="8dp"
+                    android:clickable="true"
+                    android:focusable="true" />
+
+                <View android:id="@+id/vBgBlack"
+                    android:layout_width="30dp"
+                    android:layout_height="30dp"
                     android:clickable="true"
                     android:focusable="true" />
             </LinearLayout>

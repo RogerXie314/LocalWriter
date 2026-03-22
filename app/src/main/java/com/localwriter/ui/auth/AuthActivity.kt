@@ -35,6 +35,16 @@ class AuthActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         ThemeManager.applyTheme(this)
         super.onCreate(savedInstanceState)
+
+        // 快速路径：已登录且未被锁定（如超时设为"从不"）→ 直接进主界面，消除认证界面闪现
+        if (SessionManager.isLoggedIn(this) && !SessionManager.isLocked(this)) {
+            startActivity(Intent(this, MainActivity::class.java))
+            finish()
+            @Suppress("DEPRECATION")
+            overridePendingTransition(0, 0)
+            return
+        }
+
         binding = ActivityAuthBinding.inflate(layoutInflater)
         setContentView(binding.root)
 

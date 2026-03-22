@@ -67,6 +67,9 @@ class BookListAdapter(
                 binding.btnContinueRead.visibility = View.GONE
             }
 
+            // 阅读进度条：有阅读记录时显示在封面底部
+            binding.viewReadProgress.visibility = if (book.lastChapterId > 0) View.VISIBLE else View.GONE
+
             // 根据列数调整文字大小和次要信息可见性，防止内容遮挡
             when (spanCount) {
                 4 -> {

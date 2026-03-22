@@ -127,20 +127,24 @@ class ReaderActivity : AppCompatActivity() {
 
         private val SPACINGS = floatArrayOf(1.2f, 1.55f, 1.85f, 2.2f)
 
-        /** 背景色预设 (白/米黄/暖灰/豆绿/夜黑) */
+        /** 背景色预设 (白纸/米黄/暖灰/豆绿/暖黄/深蓝夜/纯黑) */
         private val BG_COLORS = intArrayOf(
             0xFFFFFFFF.toInt(),
             0xFFF8F3E3.toInt(),
             0xFFEEE9DE.toInt(),
             0xFFDDE8CC.toInt(),
-            0xFF1A1A2E.toInt()
+            0xFFF5E8C0.toInt(),
+            0xFF1A1A2E.toInt(),
+            0xFF111111.toInt()
         )
         private val TEXT_COLORS = intArrayOf(
             0xFF333333.toInt(),
             0xFF3A3226.toInt(),
             0xFF3A3226.toInt(),
             0xFF2E3D1A.toInt(),
-            0xFFCCCCCC.toInt()
+            0xFF3B2A0A.toInt(),
+            0xFFCCCCCC.toInt(),
+            0xFFBBBBBB.toInt()
         )
     }
 
@@ -337,12 +341,12 @@ class ReaderActivity : AppCompatActivity() {
         // 背景色圆圈
         val bgViews = listOf(
             binding.vBgWhite, binding.vBgCream, binding.vBgWarm,
-            binding.vBgGreen, binding.vBgDark
+            binding.vBgGreen, binding.vBgWarmYellow, binding.vBgNight, binding.vBgBlack
         )
         bgViews.forEachIndexed { i, v ->
             v.setOnClickListener {
                 activeBgColorIdx = i
-                nightModeActive = (i == 4)
+                nightModeActive = (i >= 5)  // 深蓝夜(5) 和 纯黑(6) 均为夜间模式
                 applyBgAndText()
                 updateBgCircles()
                 updateNightButton()
@@ -446,9 +450,6 @@ class ReaderActivity : AppCompatActivity() {
         val prevPaddingTop = binding.scrollView.paddingTop
         val prevScrollY    = binding.scrollView.scrollY
 
-        // 隐藏沉浸模式顶部信息栏
-        binding.immersiveHeaderBar.visibility = View.GONE
-
         // 使用已测量高度或预估值立即应用 padding 补偿（避免 post{} 导致的单帧跳动）
         val estimatedToolbarH = if (binding.appBarLayout.height > 0) {
             binding.appBarLayout.height
@@ -460,6 +461,28 @@ class ReaderActivity : AppCompatActivity() {
             clipToPadding = false
             setPadding(0, estimatedToolbarH, 0, 0)
             if (delta != 0) scrollTo(0, (prevScrollY + delta).coerceAtLeast(0))
+        }
+
+        // 沉浸模式信息栏与工具栏交叉淡出，消除空白闪烁
+        if (binding.immersiveHeaderBar.visibility == View.VISIBLE) {
+            binding.immersiveHeaderBar.animate()
+                .alpha(0f).setDuration(ANIM_DURATION)
+                .withEndAction {
+                    binding.immersiveHeaderBar.visibility = View.GONE
+                    binding.immersiveHeaderBar.alpha = 1f
+                }.start()
+        } else {
+            binding.immersiveHeaderBar.visibility = View.GONE
+        }
+        if (binding.immersiveStatusBar.visibility == View.VISIBLE) {
+            binding.immersiveStatusBar.animate()
+                .alpha(0f).setDuration(ANIM_DURATION)
+                .withEndAction {
+                    binding.immersiveStatusBar.visibility = View.GONE
+                    binding.immersiveStatusBar.alpha = 1f
+                }.start()
+        } else {
+            binding.immersiveStatusBar.visibility = View.GONE
         }
 
         // 工具栏从顶部滑入（覆盖在 scrollView 上方，不推挤内容）
@@ -481,9 +504,6 @@ class ReaderActivity : AppCompatActivity() {
             }
         }
 
-        // 隐藏沉浸模式状态栏
-        binding.immersiveStatusBar.visibility = View.GONE
-
         updateFontSizeDisplay()
         updateBookmarkIndicatorByPosition()  // 控制栏出现：刷新为灰色可添加状态
         resetAutoHideTimer()
@@ -494,9 +514,17 @@ class ReaderActivity : AppCompatActivity() {
         autoHideHandler.removeCallbacks(autoHideRunnable)
         insetsController.hide(WindowInsetsCompat.Type.systemBars())
 
-        // 记录当前 padding 和 scrollY（工具栏消失后再补偿）
+        // 立即应用沉浸 padding，消除后续动画期间的内容位置跳动
         val snapshotPaddingTop = binding.scrollView.paddingTop
         val snapshotScrollY    = binding.scrollView.scrollY
+        applyImmersivePaddingCompensated(snapshotPaddingTop, snapshotScrollY)
+
+        // 预填内容后立即 alpha=0 显示沉浸信息栏，与工具栏淡出交叉淡入（消除空白闪烁）
+        showImmersiveChapterHeader()
+        binding.immersiveHeaderBar.alpha = 0f
+        binding.immersiveStatusBar.alpha = 0f
+        binding.immersiveHeaderBar.animate().alpha(1f).setDuration(ANIM_DURATION).start()
+        binding.immersiveStatusBar.animate().alpha(1f).setDuration(ANIM_DURATION).start()
 
         // 工具栏滑出到顶部
         if (binding.appBarLayout.visibility == View.VISIBLE && binding.appBarLayout.height > 0) {
@@ -505,13 +533,9 @@ class ReaderActivity : AppCompatActivity() {
                 .setDuration(ANIM_DURATION)
                 .withEndAction {
                     binding.appBarLayout.visibility = View.GONE
-                    applyImmersivePaddingCompensated(snapshotPaddingTop, snapshotScrollY)
-                    showImmersiveChapterHeader()
                 }.start()
         } else {
             binding.appBarLayout.visibility = View.GONE
-            applyImmersivePaddingCompensated(snapshotPaddingTop, snapshotScrollY)
-            showImmersiveChapterHeader()
         }
 
         // 底部控制面板滑出到底部
@@ -528,18 +552,6 @@ class ReaderActivity : AppCompatActivity() {
             hideAllPanels()
         }
 
-        // 显示沉浸模式底部信息栏（背景/内边距跟随阅读主题和导航栏高度）
-        val bgColor = (binding.scrollView.background as? android.graphics.drawable.ColorDrawable)?.color
-            ?: 0xFFF8F3E3.toInt()
-        val density   = resources.displayMetrics.density
-        val horizPad  = (20 * density + 0.5f).toInt()
-        val topPad    = (6  * density + 0.5f).toInt()
-        val navBotPad = systemNavBarHeight + (6 * density + 0.5f).toInt()
-        binding.immersiveStatusBar.apply {
-            setBackgroundColor(bgColor)
-            setPadding(horizPad, topPad, horizPad, navBotPad)
-            visibility = View.VISIBLE
-        }
         updateImmersiveInfo()
         updateBookmarkIndicatorByPosition()  // 进入沉浸模式：隐藏灰色书签图标
     }
@@ -556,10 +568,10 @@ class ReaderActivity : AppCompatActivity() {
         val statusH = if (systemStatusBarHeight > 0) systemStatusBarHeight
                       else (24 * density + 0.5f).toInt()
         val navH = if (systemNavBarHeight > 0) systemNavBarHeight else 0
-        // 顶部：状态栏/刘海高度 + 顶部信息栏内容(~24dp) + 天空留白(~28dp) = 52dp 附加量
-        val top = statusH + (52 * density + 0.5f).toInt()
-        // 底部：导航栏 + 底部信息栏内容(~26dp) + 地面留白(~10dp) = 36dp 附加量
-        val bot = navH  + (36 * density + 0.5f).toInt()
+        // 顶部：状态栏/刘海高度 + 顶部信息栏内容(~24dp) + 留白(~36dp) = 60dp 附加量
+        val top = statusH + (60 * density + 0.5f).toInt()
+        // 底部：导航栏 + 底部信息栏内容(~26dp) + 留白(~18dp) = 44dp 附加量
+        val bot = navH  + (44 * density + 0.5f).toInt()
         val newScrollY = if (prevPaddingTop > top) {
             (prevScrollY - (prevPaddingTop - top)).coerceAtLeast(0)
         } else {
@@ -578,9 +590,8 @@ class ReaderActivity : AppCompatActivity() {
     }
 
     /**
-     * 显示沉浸模式顶部信息栏（章节标题 + 电量 + 时间）。
-     * paddingTop 动态设为状态栏/刘海高度，确保内容处于安全区内。
-     * 同步设置底部信息栏的背景色与文字颜色。
+     * 显示沉浸模式顶部/底部信息栏并填充内容到显示状态（visibility=VISIBLE）。
+     * 调用方在需要淡入时可用 alpha=0 → animate(1f)；直接显示时直接调用即可。
      */
     private fun showImmersiveChapterHeader() {
         val density = resources.displayMetrics.density
@@ -591,12 +602,12 @@ class ReaderActivity : AppCompatActivity() {
         val bgColor = (binding.scrollView.background as? android.graphics.drawable.ColorDrawable)?.color
             ?: 0xFFF8F3E3.toInt()
         val horizPad = (20 * density + 0.5f).toInt()
-        val btmPad   = (6  * density + 0.5f).toInt()
 
-        // 顶部信息栏：状态栏高度作为 paddingTop，内容紧贴安全区下方
+        // 顶部信息栏：状态栏高度 + 4dp 内边距，内容紧贴安全区下方
         binding.immersiveHeaderBar.apply {
             setBackgroundColor(bgColor)
-            setPadding(horizPad, statusH + (2 * density + 0.5f).toInt(), horizPad, btmPad)
+            setPadding(horizPad, statusH + (4 * density + 0.5f).toInt(),
+                       horizPad, (8 * density + 0.5f).toInt())
             visibility = View.VISIBLE
         }
         binding.tvImmersiveChapterHeader.apply {
@@ -606,11 +617,12 @@ class ReaderActivity : AppCompatActivity() {
         binding.tvImmersiveBattery.setTextColor(textColor)
         binding.tvImmersiveTime.setTextColor(textColor)
 
-        // 底部信息栏：paddingBottom 留出导航栏/手势指示条高度
+        // 底部信息栏：留出导航栏/手势指示条高度 + 充足底部留白
         binding.immersiveStatusBar.apply {
             setBackgroundColor(bgColor)
-            setPadding(horizPad, (6 * density + 0.5f).toInt(),
-                       horizPad, navH + (6 * density + 0.5f).toInt())
+            setPadding(horizPad, (8 * density + 0.5f).toInt(),
+                       horizPad, navH + (8 * density + 0.5f).toInt())
+            visibility = View.VISIBLE
         }
         binding.tvImmersiveProgress.setTextColor(textColor)
         binding.tvImmersiveChapterIdx.setTextColor(textColor)
@@ -742,7 +754,7 @@ class ReaderActivity : AppCompatActivity() {
             this, com.google.android.material.R.attr.colorPrimary, Color.GRAY
         )
         val views = listOf(binding.vBgWhite, binding.vBgCream, binding.vBgWarm,
-                           binding.vBgGreen, binding.vBgDark)
+                           binding.vBgGreen, binding.vBgWarmYellow, binding.vBgNight, binding.vBgBlack)
         views.forEachIndexed { i, v ->
             val shape = GradientDrawable()
             shape.shape = GradientDrawable.OVAL
@@ -758,7 +770,7 @@ class ReaderActivity : AppCompatActivity() {
     private fun toggleNightMode() {
         nightModeActive = !nightModeActive
         if (nightModeActive) {
-            activeBgColorIdx = 4
+            activeBgColorIdx = 5  // 默认切换到深蓝夜模式（index 5）
             applyNightColors()
         } else {
             activeBgColorIdx = -1
@@ -769,10 +781,15 @@ class ReaderActivity : AppCompatActivity() {
     }
 
     private fun applyNightColors() {
-        binding.scrollView.setBackgroundColor(0xFF1A1A2E.toInt())
-        binding.tvContent.setTextColor(0xFFCCCCCC.toInt())
-        binding.tvChapterTitle.setTextColor(0xFFBBBBBB.toInt())
-        applyControlPanelTheme(0xFF1A1A2E.toInt(), 0xFFCCCCCC.toInt())
+        // 根据当前夜间背景索引选择不同夜间色（5=深蓝夜，6=纯黑）
+        val nightBg   = if (activeBgColorIdx >= 0 && activeBgColorIdx < BG_COLORS.size)
+                            BG_COLORS[activeBgColorIdx] else 0xFF1A1A2E.toInt()
+        val nightText = if (activeBgColorIdx >= 0 && activeBgColorIdx < TEXT_COLORS.size)
+                            TEXT_COLORS[activeBgColorIdx] else 0xFFCCCCCC.toInt()
+        binding.scrollView.setBackgroundColor(nightBg)
+        binding.tvContent.setTextColor(nightText)
+        binding.tvChapterTitle.setTextColor(nightText)
+        applyControlPanelTheme(nightBg, nightText)
         syncImmersiveBarColors()
         val attr = window.attributes
         if (attr.screenBrightness < 0 || attr.screenBrightness > 0.4f) {
@@ -923,9 +940,7 @@ class ReaderActivity : AppCompatActivity() {
             withContext(Dispatchers.IO) {
                 val volumes = db.volumeDao().getAllByBook(bookId).sortedBy { it.sortOrder }
                 for (vol in volumes) {
-                    val chapters = db.chapterDao().getAllByVolume(vol.id)
-                        .filter { it.status != "DELETED" }
-                        .sortedBy { it.sortOrder }
+                    val chapters = db.chapterDao().getPreviewsByVolume(vol.id)
                     for (ch in chapters) { ids.add(ch.id); titles.add(ch.title) }
                 }
             }
@@ -1035,8 +1050,13 @@ class ReaderActivity : AppCompatActivity() {
             } else {
                 val rawTarget = (currentY + pageHeight).coerceAtMost(maxScroll)
                 val targetY   = snapToLineTop(rawTarget)
-                if (pageMode == 1) slideAnimatePage(targetY, direction)
-                else sv.smoothScrollTo(0, targetY)
+                // snapToLineTop 可能将目标回退到当前位置（已处于最后一行），此时直接翻章
+                if (targetY <= currentY + SCROLL_TOLERANCE) {
+                    navigateChapter(1)
+                } else {
+                    if (pageMode == 1) slideAnimatePage(targetY, direction)
+                    else sv.smoothScrollTo(0, targetY)
+                }
             }
         } else {
             if (currentY <= SCROLL_TOLERANCE) {

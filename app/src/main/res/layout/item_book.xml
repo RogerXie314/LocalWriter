@@ -89,12 +89,12 @@
                 android:maxLines="1"
                 android:ellipsize="end"/>
 
-            <!-- 字数（底部最下行） -->
+            <!-- 字数（底部最下行，在进度条上方） -->
             <TextView
                 android:id="@+id/tvWordCount"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_alignParentBottom="true"
+                android:layout_above="@id/viewReadProgress"
                 android:layout_marginBottom="4dp"
                 android:textSize="9sp"
                 android:textColor="#99FFFFFF"/>
@@ -111,6 +111,15 @@
                 android:text="▶ 继续阅读"
                 android:textSize="9sp"
                 android:textColor="#DDFFFFFF"
+                android:visibility="gone"/>
+
+            <!-- 最底部：阅读进度条（有阅读记录时显示，紧贴底边） -->
+            <View
+                android:id="@+id/viewReadProgress"
+                android:layout_width="match_parent"
+                android:layout_height="3dp"
+                android:layout_alignParentBottom="true"
+                android:background="#66FFFFFF"
                 android:visibility="gone"/>
 
         </RelativeLayout>

@@ -376,8 +376,13 @@ class BookListFragment : Fragment() {
                     // 通过 DAO 获取所有章节内容
                     val volumes = db.volumeDao().getAllByBook(book.id)
                     val allChapters = mutableListOf<com.localwriter.data.db.entity.Chapter>()
+                    // 逐章加载正文，避免多行同时进 CursorWindow 导致溢出
                     volumes.forEach { vol ->
-                        allChapters.addAll(db.chapterDao().getAllByVolume(vol.id))
+                        val previews = db.chapterDao().getPreviewsByVolume(vol.id)
+                        previews.forEach { p ->
+                            val ch = db.chapterDao().findById(p.id)
+                            if (ch != null) allChapters.add(ch)
+                        }
                     }
                     BookExporter.ExportBook(targetBook, allChapters)
                 }
@@ -525,8 +530,7 @@ class BookListFragment : Fragment() {
                     val db = app.database
                     val vol = db.volumeDao().getAllByBook(bookId).minByOrNull { it.sortOrder }
                     if (vol != null) {
-                        db.chapterDao().getAllByVolume(vol.id)
-                            .filter { it.status != "DELETED" }
+                        db.chapterDao().getPreviewsByVolume(vol.id)
                             .minByOrNull { it.sortOrder }?.id
                     } else null
                 }
