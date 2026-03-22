@@ -2,10 +2,10 @@
 
 ## [1.6.2] - 2026-03-22
 
-- aaf07ea fix: CursorWindow overflow on large chapter import and auth screen flash
-- fe91ee4 fix: two-pane layout black right pane  add background and empty-state hint
-- 7cd4b4e fix: changelog dedup, readme v1.6.1 entry, release make_latest, script insert-once
-- 0b44b6b feat: release script also updates README changelog section
+- 修复：导入超大 TXT 文件时报「Row too big to fit into CursorWindow」保存失败的问题
+- 修复：单章内容过长时自动拆分，每章上限 25,000 字，彻底避免 SQLite 行溢出
+- 修复：设置「从不自动锁定」时，切换后台再打开出现短暂白色方框闪烁的问题
+- 修复：双栏布局右侧面板黑屏，补充背景色与空状态提示
 
 ## [1.6.1] - 2026-03-22
 
