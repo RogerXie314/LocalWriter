@@ -1,5 +1,10 @@
 ﻿# Changelog
 
+## [1.6.7] - 2026-03-22
+
+- d326a92 fix: forward+back page drift and whole-book page counter
+- 2bad59a fix: 修正更新日志乱码，release 脚本强制 UTF-8 输出
+
 ## [1.6.6] - 2026-03-22
 
 - 修复：阅读底部无半行截断，整页翻页，底部额外留一行空白
