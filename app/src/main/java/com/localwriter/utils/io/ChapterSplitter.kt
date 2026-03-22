@@ -15,6 +15,7 @@ object ChapterSplitter {
     private val CHAPTER_CANDIDATES = listOf(
         Regex("""^第[零一二三四五六七八九十百千万\d]+[章节回集篇话幕].{0,40}$"""),
         Regex("""^[Cc]hapter\s+\d+.{0,40}$"""),
+        Regex("""^正文\s+\S.{0,55}$"""),
         Regex("""^\d{1,4}[.、．]\s*\S.{0,35}$"""),
         Regex("""^(楔子|番外|序章|终章|尾声|后记|后传|序言|前言|引子).{0,25}$"""),
     )
@@ -76,10 +77,22 @@ object ChapterSplitter {
         var best: Regex? = null
         var bestCount = 0
         for (pattern in CHAPTER_CANDIDATES) {
-            val count = lines.count { isHeadingLine(it.trim(), pattern) }
-            if (count > bestCount) { bestCount = count; best = pattern }
+            val indices = lines.indices.filter { isHeadingLine(lines[it].trim(), pattern) }
+            val count = indices.size
+            if (count > bestCount && isSpacingReasonable(indices)) {
+                bestCount = count; best = pattern
+            }
         }
         return if (bestCount >= 2) best else null
+    }
+
+    /** 判断匹配行之间的间距是否合理（中位数 ≥ 5 行），过密则说明是段落内列表而非章节标题 */
+    private fun isSpacingReasonable(indices: List<Int>): Boolean {
+        if (indices.size < 2) return true
+        val spacings = (1 until indices.size).map { indices[it] - indices[it - 1] }
+        val sorted = spacings.sorted()
+        val median = sorted[sorted.size / 2]
+        return median >= 5
     }
 
     // ═══════════════════════════════════════════════════════════════
