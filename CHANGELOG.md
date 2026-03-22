@@ -18,8 +18,8 @@
 
 ## [1.6.7] - 2026-03-22
 
-- d326a92 fix: forward+back page drift and whole-book page counter
-- 2bad59a fix: 修正更新日志乱码，release 脚本强制 UTF-8 输出
+- 修复：来回翻页页面漂移，全书累计页码显示
+- 修复：更新日志乱码，release 脚本强制 UTF-8 输出
 
 ## [1.6.6] - 2026-03-22
 

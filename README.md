@@ -161,26 +161,26 @@ copies or substantial portions of the Software.
 
 ### v1.6.10（2026-03）
 
-- 5e8abe7 fix(reader): freeze content area - toolbar/immersive bars overlay only, never reflow
+- 修复阅读器：内容区尺寸冻结，工具栏与沉浸栏均为覆盖层，切换时内容零抖动
 
 ---
 
 ### v1.6.9（2026-03）
 
-- 1b99b15 fix(reader): always-hidden system bars, eliminate fullscreen flash on toggle
+- 修复阅读器：系统栏在启动时一次性隐藏，彻底消除全屏切换时内容闪至顶部的问题
 
 ---
 
 ### v1.6.8（2026-03）
 
-- f5401fb refactor(reader): replace runtime snap with pre-pagination (pageBreaks table)
+- 修复阅读器：引入预分页（pageBreaks 断点表），翻页来回不漂移，页码显示全书累计
 
 ---
 
 ### v1.6.7（2026-03）
 
-- d326a92 fix: forward+back page drift and whole-book page counter
-- 2bad59a fix: 修正更新日志乱码，release 脚本强制 UTF-8 输出
+- 修复：来回翻页页面漂移，全书累计页码显示
+- 修复：更新日志乱码，release 脚本强制 UTF-8 输出
 
 ---
 
