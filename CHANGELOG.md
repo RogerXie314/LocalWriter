@@ -9,21 +9,21 @@
 
 ## [1.6.1] - 2026-03-22
 
-- fix: release script encoding
-- chore: build infra, release pipeline and bug fixes
-- fix: reader control panel color matches reading skin
-- fix: add missing View import in SettingsActivity
-- fix: batch insert crash, gesture dialog, delete confirm, shelf overlap
-- feat: natural reader margins + smooth slide page flip
-- fix: resolve JVM declaration clash in BookListAdapter
+- 优化：自动化发布流程（release.ps1 + GitHub Actions 打包发布 APK）
+- 修复：发布脚本编码问题
+- 修复：阅读器控制面板颜色跟随阅读皮肤
+- 修复：SettingsActivity 缺失 View import 导致编译错误
+- 修复：批量写入崩溃、手势密码弹窗、删除确认逻辑、书架布局遮挡等多项问题
+- 新增：阅读器自然边距 + 水平滑动翻页动画
+- 修复：BookListAdapter 中 JVM 声明冲突
 
 ## [1.6.0] - 2026-03-16
 
-- fix: reader control panel color matches reading skin
-- fix: add missing View import in SettingsActivity
-- fix: batch insert crash, gesture dialog, delete confirm, shelf overlap
-- feat: natural reader margins + smooth slide page flip
-- fix: resolve JVM declaration clash in BookListAdapter
+- 修复：阅读器控制面板颜色跟随阅读皮肤
+- 修复：SettingsActivity 缺失 View import 导致编译错误
+- 修复：批量写入崩溃、手势密码弹窗、删除确认逻辑、书架布局遮挡等多项问题
+- 新增：阅读器自然边距 + 水平滑动翻页动画
+- 修复：BookListAdapter 中 JVM 声明冲突
 
 ## [1.5.0] - 2026-03-08
 

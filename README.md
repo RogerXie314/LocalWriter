@@ -164,10 +164,10 @@ copies or substantial portions of the Software.
 
 ### v1.6.1（2026-03）
 
-- chore: build infra — 发布流程自动化（release.ps1 + GitHub Actions release workflow）
-- fix: release script encoding
-- fix: reader control panel color matches reading skin
-- fix: add missing View import in SettingsActivity
+- 优化：自动化发布流程（release.ps1 + GitHub Actions 打包发布 APK）
+- 修复：发布脚本编码问题
+- 修复：阅读器控制面板颜色跟随阅读皮肤
+- 修复：SettingsActivity 缺失 View import 导致编译错误
 
 ---
 

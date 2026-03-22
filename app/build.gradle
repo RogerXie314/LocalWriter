@@ -77,12 +77,14 @@ android {
     }
 
     // APK 自定义命名
+    // 去掉 -N-SNAPSHOT 后缀，保持文件名干净（如 LocalWriter-v1.6.2-dev.apk）
     applicationVariants.all { variant ->
         variant.outputs.all { output ->
+            def cleanVer = variant.versionName.replaceAll(/-\d+-SNAPSHOT$/, '')
             if (variant.buildType.name == "release") {
-                outputFileName = "LocalWriter-v${variant.versionName}.apk"
+                outputFileName = "LocalWriter-v${cleanVer}.apk"
             } else if (variant.buildType.name == "debug") {
-                outputFileName = "LocalWriter-v${variant.versionName}-dev.apk"
+                outputFileName = "LocalWriter-v${cleanVer}-dev.apk"
             }
         }
     }
