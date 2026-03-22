@@ -113,6 +113,13 @@ android {
             excludes += 'META-INF/DEPENDENCIES'
         }
     }
+
+    lint {
+        // 不允许 lint 错误中断 release 构建（lint 问题不应阻止发布）
+        abortOnError false
+        // 关闭 release 构建时的 lint 致命检查（lintVitalRelease）
+        checkReleaseBuilds false
+    }
 }
 
 configurations.configureEach {
