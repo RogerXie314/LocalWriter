@@ -476,26 +476,8 @@ class ReaderActivity : AppCompatActivity() {
 
     private fun showBars() {
         barsVisible = true
-        // 系统栏全程保持隐藏，不调用 insetsController.show()，避免系统窗口 insets
-        // 变化触发 layout reflow，从根源消除「内容闪上顶部」的问题。
-
-        // 记录当前 padding 和 scrollY，后面补偿，保证内容视觉位置不变
-        val prevPaddingTop = binding.scrollView.paddingTop
-        val prevScrollY    = binding.scrollView.scrollY
-
-        // 工具栏高度 = actionBarSize + 状态栏安全区（使用 peak 值，与系统栏是否可见无关）
-        val safeTop = if (peakStatusBarHeight > 0) peakStatusBarHeight else systemStatusBarHeight
-        val estimatedToolbarH = if (binding.appBarLayout.height > 0) {
-            binding.appBarLayout.height
-        } else {
-            actionBarHeight + safeTop
-        }
-        val delta = estimatedToolbarH - prevPaddingTop
-        binding.scrollView.apply {
-            clipToPadding = false
-            setPadding(0, estimatedToolbarH, 0, 0)
-            if (delta != 0) scrollTo(0, (prevScrollY + delta).coerceAtLeast(0))
-        }
+        // scrollView 的 padding/scrollY 完全不动，工具栏作为覆盖层滑入。
+        // 唯一不变量：content area 尺寸不变 → stablePageHeight/pageBreaks 永远有效。
 
         // 立即隐藏沉浸信息栏，避免与工具栏同时可见形成双重遮挡
         binding.immersiveHeaderBar.apply { animate().cancel(); alpha = 1f; visibility = View.GONE }
@@ -528,12 +510,11 @@ class ReaderActivity : AppCompatActivity() {
     private fun hideBars() {
         barsVisible = false
         autoHideHandler.removeCallbacks(autoHideRunnable)
-        // 系统栏全程保持隐藏，不调用 insetsController.hide()。
-
-        // 立即应用沉浸 padding，消除后续动画期间的内容位置跳动
-        val snapshotPaddingTop = binding.scrollView.paddingTop
-        val snapshotScrollY    = binding.scrollView.scrollY
-        applyImmersivePaddingCompensated(snapshotPaddingTop, snapshotScrollY)
+        // 首次调用（内容尚未加载 → stablePageHeight==0）时做一次近似初始化；
+        // 之后 padding 由 alignPaddingToLines 稳定管理，切换工具栏时完全不触碰。
+        if (stablePageHeight == 0) {
+            applyImmersivePaddingCompensated(binding.scrollView.paddingTop, binding.scrollView.scrollY)
+        }
 
         // 工具栏先滑出，结束后再显示沉浸信息栏，避免两层 UI 同时可见形成双重遮挡
         if (binding.appBarLayout.visibility == View.VISIBLE && binding.appBarLayout.height > 0) {
@@ -569,8 +550,6 @@ class ReaderActivity : AppCompatActivity() {
 
         updateImmersiveInfo()
         updateBookmarkIndicatorByPosition()  // 进入沉浸模式：隐藏灰色书签图标
-        // padding 变化后重新对齐行高并刷新 pageBreaks
-        scheduleAlignPadding()
     }
 
     /**
@@ -628,33 +607,41 @@ class ReaderActivity : AppCompatActivity() {
         if (lineH <= 0) return
         val sv = binding.scrollView
         val density = resources.displayMetrics.density
-        // 确保 paddingTop 使用最新的正确值（解决首次加载时 insets 尚未到达的问题）
-        if (!barsVisible) {
-            val statusH = if (systemStatusBarHeight > 0) systemStatusBarHeight
-                          else (24 * density + 0.5f).toInt()
-            val correctTop = statusH + (IMMERSIVE_TOP_DP * density + 0.5f).toInt()
-            if (sv.paddingTop != correctTop) {
-                val delta = correctTop - sv.paddingTop
-                sv.setPadding(sv.paddingLeft, correctTop, sv.paddingRight, sv.paddingBottom)
-                sv.scrollTo(0, (sv.scrollY + delta).coerceAtLeast(0))
-            }
+
+        // ── 稳定 paddingTop：取 max(工具栏高度, 沉浸顶栏高度) ──────────────────────────
+        // 两个状态共享同一个 paddingTop，showBars/hideBars 切换时 scrollView 尺寸完全不变，
+        // 彻底消除「内容一头顶天一头顶地」的闪烁以及 pageBreaks 失效问题。
+        val statusH     = maxOf(systemStatusBarHeight, peakStatusBarHeight,
+                                (24 * density + 0.5f).toInt())
+        val immTopH     = statusH + (IMMERSIVE_TOP_DP * density + 0.5f).toInt()
+        val toolbarTopH = if (binding.appBarLayout.height > 0) binding.appBarLayout.height
+                          else (actionBarHeight + statusH)
+        val stableTopH  = maxOf(immTopH, toolbarTopH)
+        if (sv.paddingTop != stableTopH) {
+            val topDelta = stableTopH - sv.paddingTop
+            sv.setPadding(sv.paddingLeft, stableTopH, sv.paddingRight, sv.paddingBottom)
+            sv.scrollTo(0, (sv.scrollY + topDelta).coerceAtLeast(0))
         }
-        val navH = if (systemNavBarHeight > 0) systemNavBarHeight else 0
-        // 底部信息栏基准高度（与 showImmersiveChapterHeader 保持一致）
+
+        // ── 对齐 paddingBottom：整行倍数，消除底部半行 ───────────────────────────────
+        val navH    = if (systemNavBarHeight > 0) systemNavBarHeight else 0
         val baseBot = navH + (IMMERSIVE_BOT_DP * density + 0.5f).toInt()
-        val pageH = sv.height - sv.paddingTop - baseBot
-        // 消除底部半行余量，再额外留 1 整行空白
-        val remainder = pageH % lineH
+        val pageH   = sv.height - stableTopH - baseBot
+        val remainder   = pageH % lineH
         val halfLineFix = if (remainder == 0) 0 else lineH - remainder
         val newBot = baseBot + halfLineFix + lineH
         if (sv.paddingBottom != newBot) {
             sv.setPadding(sv.paddingLeft, sv.paddingTop, sv.paddingRight, newBot)
         }
-        // 稳定存储行高与页高，供翻页导航和全书页码估算使用
-        storedLineH = lineH
+
+        storedLineH      = lineH
         stablePageHeight = (sv.height - sv.paddingTop - newBot).coerceAtLeast(1)
-        // 布局稳定后立即预分页
         computePageBreaks()
+
+        // paddingTop 可能变化（例如首次内容载入时），同步沉浸顶栏高度
+        if (!barsVisible && binding.immersiveHeaderBar.visibility == View.VISIBLE) {
+            showImmersiveChapterHeader()
+        }
     }
 
     /**
@@ -699,8 +686,9 @@ class ReaderActivity : AppCompatActivity() {
             ?: 0xFFF8F3E3.toInt()
         val horizPad = (20 * density + 0.5f).toInt()
 
-        // 顶部信息栏：高度精确 = 状态栏 + IMMERSIVE_TOP_DP，与 scrollView.paddingTop 严格对齐
-        val headerH = statusH + (IMMERSIVE_TOP_DP * density + 0.5f).toInt()
+        // 顶部信息栏：高度 = scrollView.paddingTop（与工具栏等高），零间隙零遮挡
+        val headerH = binding.scrollView.paddingTop.takeIf { it > 0 }
+            ?: (statusH + (IMMERSIVE_TOP_DP * density + 0.5f).toInt())
         val footerH = navH   + (IMMERSIVE_BOT_DP * density + 0.5f).toInt()
         binding.immersiveHeaderBar.apply {
             setBackgroundColor(bgColor)
