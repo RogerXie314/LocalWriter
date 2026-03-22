@@ -70,6 +70,12 @@
 -dontwarn org.kxml2.**
 
 # ——————————————————————————————————————
+# JSR-305 / Google Tink 注解（编译期注解，运行时不存在）
+# ——————————————————————————————————————
+-dontwarn javax.annotation.**
+-dontwarn javax.annotation.concurrent.**
+
+# ——————————————————————————————————————
 # ViewBinding
 # ——————————————————————————————————————
 -keep class com.localwriter.databinding.** { *; }
