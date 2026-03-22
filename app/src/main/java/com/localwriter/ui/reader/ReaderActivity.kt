@@ -55,6 +55,10 @@ class ReaderActivity : AppCompatActivity() {
     /** 系统状态栏/导航栏高度（沉浸模式增加内边距，防止内容躲在刘海/摄像头后面） */
     private var systemStatusBarHeight = 0
     private var systemNavBarHeight    = 0
+    /** 状态栏完整高度（仅在系统栏可见时采集，隐藏后不清零，用于工具栏布局计算） */
+    private var peakStatusBarHeight   = 0
+    /** 导航栏完整高度（仅在可见时采集，隐藏后不清零） */
+    private var peakNavBarHeight      = 0
 
     private var chapterId: Long = 0
     private var bookId: Long = 0
@@ -195,11 +199,15 @@ class ReaderActivity : AppCompatActivity() {
         // 监听系统栏 insets，记录高度用于沉浸模式下的安全内边距。
         // 使用 statusBars 与 displayCutout 的最大值确保挖空屏/刘海屏上内容不被遮挡：
         // 状态栏可见时 statusBars() > cutout；状态栏隐藏时取 cutout 保证安全区。
+        // peak* 变量在系统栏可见期间记录真实高度，隐藏后不被清零，供工具栏/AppBar 布局使用。
         androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(binding.readerRoot) { _, insets ->
             val statusTop = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.statusBars()).top
             val cutoutTop = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.displayCutout()).top
+            val navBottom = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.navigationBars()).bottom
             systemStatusBarHeight = maxOf(statusTop, cutoutTop)
-            systemNavBarHeight    = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.navigationBars()).bottom
+            systemNavBarHeight    = navBottom
+            if (statusTop > peakStatusBarHeight) peakStatusBarHeight = statusTop
+            if (navBottom > peakNavBarHeight)    peakNavBarHeight    = navBottom
             insets
         }
 
@@ -225,6 +233,10 @@ class ReaderActivity : AppCompatActivity() {
         }
 
         setupBottomControls()
+
+        // 系统栏在整个阅读会话中保持隐藏：只在 onCreate 隐藏一次，showBars/hideBars
+        // 仅切换 App 内自绘覆盖层，不再触发系统栏动画，彻底消除切换闪烁。
+        insetsController.hide(WindowInsetsCompat.Type.systemBars())
 
         // 默认进入沉浸模式
         hideBars()
@@ -464,17 +476,19 @@ class ReaderActivity : AppCompatActivity() {
 
     private fun showBars() {
         barsVisible = true
-        insetsController.show(WindowInsetsCompat.Type.systemBars())
+        // 系统栏全程保持隐藏，不调用 insetsController.show()，避免系统窗口 insets
+        // 变化触发 layout reflow，从根源消除「内容闪上顶部」的问题。
 
         // 记录当前 padding 和 scrollY，后面补偿，保证内容视觉位置不变
         val prevPaddingTop = binding.scrollView.paddingTop
         val prevScrollY    = binding.scrollView.scrollY
 
-        // 使用已测量高度或预估值立即应用 padding 补偿（避免 post{} 导致的单帧跳动）
+        // 工具栏高度 = actionBarSize + 状态栏安全区（使用 peak 值，与系统栏是否可见无关）
+        val safeTop = if (peakStatusBarHeight > 0) peakStatusBarHeight else systemStatusBarHeight
         val estimatedToolbarH = if (binding.appBarLayout.height > 0) {
             binding.appBarLayout.height
         } else {
-            actionBarHeight + systemStatusBarHeight
+            actionBarHeight + safeTop
         }
         val delta = estimatedToolbarH - prevPaddingTop
         binding.scrollView.apply {
@@ -514,7 +528,7 @@ class ReaderActivity : AppCompatActivity() {
     private fun hideBars() {
         barsVisible = false
         autoHideHandler.removeCallbacks(autoHideRunnable)
-        insetsController.hide(WindowInsetsCompat.Type.systemBars())
+        // 系统栏全程保持隐藏，不调用 insetsController.hide()。
 
         // 立即应用沉浸 padding，消除后续动画期间的内容位置跳动
         val snapshotPaddingTop = binding.scrollView.paddingTop
@@ -555,6 +569,8 @@ class ReaderActivity : AppCompatActivity() {
 
         updateImmersiveInfo()
         updateBookmarkIndicatorByPosition()  // 进入沉浸模式：隐藏灰色书签图标
+        // padding 变化后重新对齐行高并刷新 pageBreaks
+        scheduleAlignPadding()
     }
 
     /**
@@ -612,6 +628,17 @@ class ReaderActivity : AppCompatActivity() {
         if (lineH <= 0) return
         val sv = binding.scrollView
         val density = resources.displayMetrics.density
+        // 确保 paddingTop 使用最新的正确值（解决首次加载时 insets 尚未到达的问题）
+        if (!barsVisible) {
+            val statusH = if (systemStatusBarHeight > 0) systemStatusBarHeight
+                          else (24 * density + 0.5f).toInt()
+            val correctTop = statusH + (IMMERSIVE_TOP_DP * density + 0.5f).toInt()
+            if (sv.paddingTop != correctTop) {
+                val delta = correctTop - sv.paddingTop
+                sv.setPadding(sv.paddingLeft, correctTop, sv.paddingRight, sv.paddingBottom)
+                sv.scrollTo(0, (sv.scrollY + delta).coerceAtLeast(0))
+            }
+        }
         val navH = if (systemNavBarHeight > 0) systemNavBarHeight else 0
         // 底部信息栏基准高度（与 showImmersiveChapterHeader 保持一致）
         val baseBot = navH + (IMMERSIVE_BOT_DP * density + 0.5f).toInt()
