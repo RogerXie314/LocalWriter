@@ -153,6 +153,12 @@ copies or substantial portions of the Software.
 
 ## 📋 更新日志
 
+### v1.6.11（2026-03）
+
+- 跳过登录显示友好用户名，更新日志改为中文
+
+---
+
 ### v1.6.10（2026-03）
 
 - 5e8abe7 fix(reader): freeze content area - toolbar/immersive bars overlay only, never reflow
