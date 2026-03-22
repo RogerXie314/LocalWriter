@@ -18,8 +18,9 @@
 1. 检查工作区是否干净（如有未提交文件先提醒用户）
 2. 从 git tag 读取当前版本，计算新版本
 3. 从 `git log` 生成 CHANGELOG 条目并写入 `CHANGELOG.md`
-4. `git commit` → 创建 annotated tag → `git push`
-5. 推送 tag 触发 `.github/workflows/release.yml`，由 GitHub Actions 打包 APK 并自动发布到 Releases 页
+4. 同步更新 `README.md` 的「更新日志」章节（插入新版本摘要）
+5. `git commit` → 创建 annotated tag → `git push`
+6. 推送 tag 触发 `.github/workflows/release.yml`，由 GitHub Actions 打包 APK 并自动发布到 Releases 页
 
 ## 版本号规则
 
