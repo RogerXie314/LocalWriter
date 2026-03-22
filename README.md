@@ -153,6 +153,12 @@ copies or substantial portions of the Software.
 
 ## 📋 更新日志
 
+### v1.6.13（2026-03）
+
+- 重构阅读器，采用 PagedTextView 彻底消除翻页闪烁
+
+---
+
 ### v1.6.12（2026-03）
 
 - 移除 build.yml 中的 pre-release 创建，不再覆盖正式 Release
