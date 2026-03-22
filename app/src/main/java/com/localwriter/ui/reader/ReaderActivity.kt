@@ -70,6 +70,11 @@ class ReaderActivity : AppCompatActivity() {
     private var storedLineH: Int = 0
     /** 经行高对齐后的稳定页高（像素），翻页导航全程使用此值 */
     private var stablePageHeight: Int = 0
+    /**
+     * 预分页断点：每一页首行的 scrollY 绝对坐标，由 computePageBreaks() 在布局稳定后一次性计算。
+     * 翻页时直接查表，无需实时 snap 计算，彻底消除来回翻页的位置漂移。
+     */
+    private var pageBreaks: List<Int> = emptyList()
 
     private var currentFontSize: Float = 18f
     private val fontSizeStep = 2f
@@ -621,6 +626,36 @@ class ReaderActivity : AppCompatActivity() {
         // 稳定存储行高与页高，供翻页导航和全书页码估算使用
         storedLineH = lineH
         stablePageHeight = (sv.height - sv.paddingTop - newBot).coerceAtLeast(1)
+        // 布局稳定后立即预分页
+        computePageBreaks()
+    }
+
+    /**
+     * 预分页：在布局稳定（alignPaddingToLines 完成）后一次性计算每一页的起始 scrollY。
+     *
+     * 原理：stablePageHeight 已被对齐为 storedLineH 的整数倍，
+     * 每隔 linesPerPage 行取一个断点，直接映射为 scrollY 坐标。
+     * 翻页时查表跳转，零误差，无累积漂移。
+     */
+    private fun computePageBreaks() {
+        val layout   = binding.tvContent.layout ?: return
+        val lineH    = storedLineH
+        val ph       = stablePageHeight
+        if (lineH <= 0 || ph <= 0) return
+
+        val tvTop    = binding.tvContent.top
+        val tvPadTop = binding.tvContent.paddingTop
+        val linesPerPage = ph / lineH  // stablePageHeight 已对齐，整除无余数
+        val totalLines   = layout.lineCount
+
+        val breaks = mutableListOf<Int>()
+        var lineIdx = 0
+        while (lineIdx < totalLines) {
+            val layoutY = layout.getLineTop(lineIdx)
+            breaks.add((layoutY + tvTop + tvPadTop).coerceAtLeast(0))
+            lineIdx += linesPerPage
+        }
+        pageBreaks = breaks
     }
 
     /**
@@ -875,12 +910,17 @@ class ReaderActivity : AppCompatActivity() {
 
     /** 更新沉浸模式顶部（电量 + 时间）和底部（阅读进度% + 当前页/总页 数）信息栏 */
     private fun updateImmersiveInfo() {
-        // 全书页码：累计前N章页数 + 当前章内页数
+        // 全书页码
         val sv = binding.scrollView
         val child = sv.getChildAt(0)
         val pageH = getPageHeight()
-        val pageText = if (child != null && pageH > 0 && storedLineH > 0 && chapterWordCounts.isNotEmpty()) {
-            // 估算每页字数：行高→每页行数，字号→每行字数
+        val pageText = if (child != null && pageH > 0 && pageBreaks.isNotEmpty() && chapterWordCounts.isNotEmpty()) {
+            // 当前章：从预分页表精确查询
+            val currentPageInChapter = pageBreaks.indexOfLast { it <= sv.scrollY + SCROLL_TOLERANCE }
+                .coerceAtLeast(0) + 1
+            val totalChapterPages = pageBreaks.size
+
+            // 其他章：用字数估算页数（保持与当前章相同的参数设定）
             val linesPerPage  = (pageH / storedLineH).coerceAtLeast(1)
             val density       = resources.displayMetrics.density
             val charW         = (currentFontSize * density + 0.5f).toInt().coerceAtLeast(1)
@@ -890,19 +930,18 @@ class ReaderActivity : AppCompatActivity() {
             val charsPerLine  = (contentW / charW).coerceAtLeast(1)
             val charsPerPage  = (linesPerPage * charsPerLine).coerceAtLeast(1)
 
-            // 当前章之前的累计页数
             val pagesBeforeCurrent = chapterWordCounts.take(currentIndex).sumOf { wc ->
                 (wc / charsPerPage) + 1
             }
-            // 当前章内的页码（滚动位置换算）
-            val currentPageInChapter = (sv.scrollY / pageH) + 1
-            // 全书总页数
-            val totalBookPages = chapterWordCounts.sumOf { wc -> (wc / charsPerPage) + 1 }
+            // 当前章用精确值，其余章用估算值，加总全书
+            val pagesAfterCurrent = chapterWordCounts.drop(currentIndex + 1).sumOf { wc ->
+                (wc / charsPerPage) + 1
+            }
+            val totalBookPages = (pagesBeforeCurrent + totalChapterPages + pagesAfterCurrent)
                 .coerceAtLeast(1)
 
             "${pagesBeforeCurrent + currentPageInChapter}/$totalBookPages 页"
         } else if (child != null && pageH > 0) {
-            // 章节字数未加载时回退到章内页码
             val maxScroll = (child.measuredHeight + sv.paddingTop + sv.paddingBottom - sv.height).coerceAtLeast(0)
             val currentPage = (sv.scrollY / pageH) + 1
             val totalPages  = (maxScroll / pageH) + 1
@@ -1105,43 +1144,29 @@ class ReaderActivity : AppCompatActivity() {
     }
 
     /**
-     * 翻页导航：按屏幕高度滚动/翻页。
-     * direction > 0 = 向后；direction < 0 = 向前。
-     * 翻页模式下带水平滑入动画；滚动模式下仍用 smoothScrollTo。
-     * 已到末尾/开头时切换到下一章/上一章。
-     *
-     * 核心修正：targetY 经过 [snapToLineTop] 对齐到最近的完整行顶部，
-     * 避免多次翻页后上下出现半行文字。
+     * 翻页导航（预分页版）：直接查 pageBreaks 表，零误差，来回翻页落点完全一致。
+     * 仅在 pageBreaks 为空（布局尚未稳定）时回退到滚动模式。
+     * direction > 0 = 向后翻；direction < 0 = 向前翻。
      */
     private fun navigatePage(direction: Int) {
         val sv = binding.scrollView
-        val child = sv.getChildAt(0) ?: return
-        val pageHeight = getPageHeight()
-        val contentHeight = child.measuredHeight.takeIf { it > 0 } ?: child.height
+        if (pageBreaks.isEmpty()) {
+            // 布局尚未就绪，简单滚一屏作为兜底
+            val ph = getPageHeight()
+            val targetY = (sv.scrollY + direction * ph).coerceAtLeast(0)
+            sv.smoothScrollTo(0, targetY)
+            return
+        }
         val currentY = sv.scrollY
-        if (direction > 0) {
-            val maxScroll = (contentHeight - pageHeight).coerceAtLeast(0)
-            if (currentY >= maxScroll - SCROLL_TOLERANCE) {
-                navigateChapter(1)
-            } else {
-                // 前进：snapToFirstFullLine 对齐到第一个完整行（不截断顶行）
-                // 与后退的 snapToLineTop 严格对称，保证来回翻页落点完全一致
-                val rawTarget = (currentY + pageHeight).coerceAtMost(maxScroll)
-                val targetY   = snapToFirstFullLine(rawTarget)
-                if (targetY <= currentY + SCROLL_TOLERANCE) {
-                    navigateChapter(1)
-                } else {
-                    if (pageMode == 1) slideAnimatePage(targetY, direction)
-                    else sv.smoothScrollTo(0, targetY)
-                }
-            }
-        } else {
-            if (currentY <= SCROLL_TOLERANCE) {
-                navigateChapter(-1)
-            } else {
-                // 后退：snapToLineTop 对齐到行顶，与前进方向互逆，不会累积偏移
-                val rawTarget = (currentY - pageHeight).coerceAtLeast(0)
-                val targetY   = snapToLineTop(rawTarget)
+        // 在 pageBreaks 中找当前所在页的索引（最后一个 ≤ currentY 的断点）
+        val currentIdx = pageBreaks.indexOfLast { it <= currentY + SCROLL_TOLERANCE }
+            .coerceAtLeast(0)
+        val targetIdx = currentIdx + direction
+        when {
+            targetIdx < 0               -> navigateChapter(-1)
+            targetIdx >= pageBreaks.size -> navigateChapter(1)
+            else -> {
+                val targetY = pageBreaks[targetIdx]
                 if (pageMode == 1) slideAnimatePage(targetY, direction)
                 else sv.smoothScrollTo(0, targetY)
             }
