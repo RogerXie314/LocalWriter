@@ -153,6 +153,13 @@ copies or substantial portions of the Software.
 
 ## 📋 更新日志
 
+### v1.6.3（2026-03）
+
+- 75750da 浼樺寲锛氶槄璇诲櫒鍏ㄩ潰 UX 閲嶆瀯锛屽鏍囦富娴侀槄璇?App 浜や簰瑙勮寖
+- 53c6098 淇锛欰PK 鏂囦欢鍚嶅幓鎺?SNAPSHOT 鍚庣紑锛屽巻鍙叉洿鏂版棩蹇楁敼涓轰腑鏂?0d439b8 docs: 灏?v1.6.2 鏇存柊鏃ュ織鏀逛负涓枃鎻忚堪
+
+---
+
 ### v1.6.2（2026-03）
 
 - 修复：导入超大 TXT 文件时报「Row too big to fit into CursorWindow」保存失败的问题
