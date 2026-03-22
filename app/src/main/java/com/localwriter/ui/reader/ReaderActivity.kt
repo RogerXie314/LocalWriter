@@ -62,8 +62,14 @@ class ReaderActivity : AppCompatActivity() {
 
     private var allChapterIds: List<Long> = emptyList()
     private var chapterTitles: List<String> = emptyList()
+    /** 各章节字数，用于全书总页码估算 */
+    private var chapterWordCounts: List<Int> = emptyList()
     /** 书名，用于沉浸模式顶部信息栏（避免与正文中的章节标题重复显示） */
     private var bookTitle: String = ""
+    /** 行高像素，由 alignPaddingToLines 测量，用于全书页码估算 */
+    private var storedLineH: Int = 0
+    /** 经行高对齐后的稳定页高（像素），翻页导航全程使用此值 */
+    private var stablePageHeight: Int = 0
 
     private var currentFontSize: Float = 18f
     private val fontSizeStep = 2f
@@ -612,6 +618,9 @@ class ReaderActivity : AppCompatActivity() {
         if (sv.paddingBottom != newBot) {
             sv.setPadding(sv.paddingLeft, sv.paddingTop, sv.paddingRight, newBot)
         }
+        // 稳定存储行高与页高，供翻页导航和全书页码估算使用
+        storedLineH = lineH
+        stablePageHeight = (sv.height - sv.paddingTop - newBot).coerceAtLeast(1)
     }
 
     /**
@@ -866,11 +875,34 @@ class ReaderActivity : AppCompatActivity() {
 
     /** 更新沉浸模式顶部（电量 + 时间）和底部（阅读进度% + 当前页/总页 数）信息栏 */
     private fun updateImmersiveInfo() {
-        // 当前章节内 页码 / 总页数
+        // 全书页码：累计前N章页数 + 当前章内页数
         val sv = binding.scrollView
         val child = sv.getChildAt(0)
         val pageH = getPageHeight()
-        val pageText = if (child != null && pageH > 0) {
+        val pageText = if (child != null && pageH > 0 && storedLineH > 0 && chapterWordCounts.isNotEmpty()) {
+            // 估算每页字数：行高→每页行数，字号→每行字数
+            val linesPerPage  = (pageH / storedLineH).coerceAtLeast(1)
+            val density       = resources.displayMetrics.density
+            val charW         = (currentFontSize * density + 0.5f).toInt().coerceAtLeast(1)
+            val contentW      = (binding.tvContent.width
+                    - binding.tvContent.paddingLeft - binding.tvContent.paddingRight)
+                    .coerceAtLeast(1)
+            val charsPerLine  = (contentW / charW).coerceAtLeast(1)
+            val charsPerPage  = (linesPerPage * charsPerLine).coerceAtLeast(1)
+
+            // 当前章之前的累计页数
+            val pagesBeforeCurrent = chapterWordCounts.take(currentIndex).sumOf { wc ->
+                (wc / charsPerPage) + 1
+            }
+            // 当前章内的页码（滚动位置换算）
+            val currentPageInChapter = (sv.scrollY / pageH) + 1
+            // 全书总页数
+            val totalBookPages = chapterWordCounts.sumOf { wc -> (wc / charsPerPage) + 1 }
+                .coerceAtLeast(1)
+
+            "${pagesBeforeCurrent + currentPageInChapter}/$totalBookPages 页"
+        } else if (child != null && pageH > 0) {
+            // 章节字数未加载时回退到章内页码
             val maxScroll = (child.measuredHeight + sv.paddingTop + sv.paddingBottom - sv.height).coerceAtLeast(0)
             val currentPage = (sv.scrollY / pageH) + 1
             val totalPages  = (maxScroll / pageH) + 1
@@ -979,17 +1011,19 @@ class ReaderActivity : AppCompatActivity() {
     private fun loadBookChapters() {
         lifecycleScope.launch {
             val db = (application as LocalWriterApp).database
-            val ids    = mutableListOf<Long>()
-            val titles = mutableListOf<String>()
+            val ids       = mutableListOf<Long>()
+            val titles    = mutableListOf<String>()
+            val wordCounts = mutableListOf<Int>()
             withContext(Dispatchers.IO) {
                 val volumes = db.volumeDao().getAllByBook(bookId).sortedBy { it.sortOrder }
                 for (vol in volumes) {
                     val chapters = db.chapterDao().getPreviewsByVolume(vol.id)
-                    for (ch in chapters) { ids.add(ch.id); titles.add(ch.title) }
+                    for (ch in chapters) { ids.add(ch.id); titles.add(ch.title); wordCounts.add(ch.wordCount) }
                 }
             }
-            allChapterIds = ids
-            chapterTitles = titles
+            allChapterIds     = ids
+            chapterTitles     = titles
+            chapterWordCounts = wordCounts
             currentIndex  = ids.indexOf(chapterId).coerceAtLeast(0)
             applyUserSettings()
             loadChapter(chapterId)
@@ -1082,8 +1116,7 @@ class ReaderActivity : AppCompatActivity() {
     private fun navigatePage(direction: Int) {
         val sv = binding.scrollView
         val child = sv.getChildAt(0) ?: return
-        // 扣除沉浸模式安全 padding，计算真实可视区域高度
-        val pageHeight = (sv.height - sv.paddingTop - sv.paddingBottom).coerceAtLeast(1)
+        val pageHeight = getPageHeight()
         val contentHeight = child.measuredHeight.takeIf { it > 0 } ?: child.height
         val currentY = sv.scrollY
         if (direction > 0) {
@@ -1091,10 +1124,10 @@ class ReaderActivity : AppCompatActivity() {
             if (currentY >= maxScroll - SCROLL_TOLERANCE) {
                 navigateChapter(1)
             } else {
-                // 每次整页翻进：完整一页，配合 snapToLineTop 保证起始行对齐，底部无半行
+                // 前进：snapToFirstFullLine 对齐到第一个完整行（不截断顶行）
+                // 与后退的 snapToLineTop 严格对称，保证来回翻页落点完全一致
                 val rawTarget = (currentY + pageHeight).coerceAtMost(maxScroll)
-                val targetY   = snapToLineTop(rawTarget)
-                // snapToLineTop 可能将目标回退到当前位置（已处于最后一行），此时直接翻章
+                val targetY   = snapToFirstFullLine(rawTarget)
                 if (targetY <= currentY + SCROLL_TOLERANCE) {
                     navigateChapter(1)
                 } else {
@@ -1106,6 +1139,7 @@ class ReaderActivity : AppCompatActivity() {
             if (currentY <= SCROLL_TOLERANCE) {
                 navigateChapter(-1)
             } else {
+                // 后退：snapToLineTop 对齐到行顶，与前进方向互逆，不会累积偏移
                 val rawTarget = (currentY - pageHeight).coerceAtLeast(0)
                 val targetY   = snapToLineTop(rawTarget)
                 if (pageMode == 1) slideAnimatePage(targetY, direction)
@@ -1131,6 +1165,25 @@ class ReaderActivity : AppCompatActivity() {
         if (layoutY < 0 || layoutY > layout.height) return rawScrollY
         val line = layout.getLineForVertical(layoutY)
         return (layout.getLineTop(line) + tvTop + tvPadTop).coerceAtLeast(0)
+    }
+
+    /**
+     * 向前翻页专用：返回第一个完整行的顶部（≥ rawScrollY），使新页头行不被截断。
+     * 与 [snapToLineTop]（始终 ≤ rawScrollY）方向相反，前进/后退 snap 方向对称，
+     * 保证「翻一页再翻回来」严格回到原位，不丢行。
+     */
+    private fun snapToFirstFullLine(rawScrollY: Int): Int {
+        val layout   = binding.tvContent.layout ?: return rawScrollY
+        val tvTop    = binding.tvContent.top
+        val tvPadTop = binding.tvContent.paddingTop
+        val layoutY  = rawScrollY - tvTop - tvPadTop
+        if (layoutY <= 0) return 0
+        if (layoutY >= layout.height) return rawScrollY
+        val line     = layout.getLineForVertical(layoutY)
+        val lineTop  = layout.getLineTop(line)
+        // 若 rawScrollY 落在行中间，推进到下一行起始
+        val targetLine = if (lineTop < layoutY && line + 1 < layout.lineCount) line + 1 else line
+        return (layout.getLineTop(targetLine) + tvTop + tvPadTop).coerceAtLeast(0)
     }
 
     /**
@@ -1215,8 +1268,8 @@ class ReaderActivity : AppCompatActivity() {
     }
 
     private fun getPageHeight(): Int {
-        val sv = binding.scrollView
-        return (sv.height - sv.paddingTop - sv.paddingBottom).coerceAtLeast(1)
+        return if (stablePageHeight > 0) stablePageHeight
+        else (binding.scrollView.height - binding.scrollView.paddingTop - binding.scrollView.paddingBottom).coerceAtLeast(1)
     }
 
     /**
