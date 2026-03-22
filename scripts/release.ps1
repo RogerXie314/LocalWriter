@@ -6,6 +6,10 @@ param([string]$Bump = "patch")
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
+# 强制控制台和 git log 均以 UTF-8 输出，避免中文提交信息写入 CHANGELOG 时乱码
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+$OutputEncoding            = [System.Text.Encoding]::UTF8
+$env:LANG                  = "en_US.UTF-8"
 
 Push-Location "$PSScriptRoot\.."
 try {
