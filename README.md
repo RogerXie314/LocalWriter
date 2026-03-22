@@ -153,6 +153,12 @@ copies or substantial portions of the Software.
 
 ## 📋 更新日志
 
+### v1.6.8（2026-03）
+
+- f5401fb refactor(reader): replace runtime snap with pre-pagination (pageBreaks table)
+
+---
+
 ### v1.6.7（2026-03）
 
 - d326a92 fix: forward+back page drift and whole-book page counter

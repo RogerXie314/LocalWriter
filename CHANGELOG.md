@@ -1,5 +1,9 @@
 ﻿# Changelog
 
+## [1.6.8] - 2026-03-22
+
+- f5401fb refactor(reader): replace runtime snap with pre-pagination (pageBreaks table)
+
 ## [1.6.7] - 2026-03-22
 
 - d326a92 fix: forward+back page drift and whole-book page counter
