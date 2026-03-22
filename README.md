@@ -153,6 +153,12 @@ copies or substantial portions of the Software.
 
 ## 📋 更新日志
 
+### v1.6.9（2026-03）
+
+- 1b99b15 fix(reader): always-hidden system bars, eliminate fullscreen flash on toggle
+
+---
+
 ### v1.6.8（2026-03）
 
 - f5401fb refactor(reader): replace runtime snap with pre-pagination (pageBreaks table)

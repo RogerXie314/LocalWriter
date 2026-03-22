@@ -1,5 +1,9 @@
 ﻿# Changelog
 
+## [1.6.9] - 2026-03-22
+
+- 1b99b15 fix(reader): always-hidden system bars, eliminate fullscreen flash on toggle
+
 ## [1.6.8] - 2026-03-22
 
 - f5401fb refactor(reader): replace runtime snap with pre-pagination (pageBreaks table)
