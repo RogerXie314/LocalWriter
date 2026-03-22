@@ -1,5 +1,9 @@
 ﻿# Changelog
 
+## [1.6.19] - 2026-03-22
+
+- 修复 Lint MissingDefaultResource，为 night_* 颜色添加 values/ 基础声明
+
 ## [1.6.18] - 2026-03-22
 
 - 修复 R8 missing class javax.annotation (Google Tink 传递依赖)
