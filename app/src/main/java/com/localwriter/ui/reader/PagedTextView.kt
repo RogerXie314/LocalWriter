@@ -140,6 +140,11 @@ class PagedTextView @JvmOverloads constructor(
         if (width > 0 && staticLayout != null) rebuildPages()
     }
 
+    fun setTypeface(typeface: Typeface) {
+        textPaint.typeface = typeface
+        if (width > 0 && staticLayout != null) rebuildPages()
+    }
+
     fun setBgColor(color: Int) {
         bgColor = color
         setBackgroundColor(color)

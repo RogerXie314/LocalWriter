@@ -189,17 +189,17 @@
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:paddingHorizontal="16dp"
-            android:paddingTop="14dp"
-            android:paddingBottom="6dp"
+            android:paddingTop="16dp"
+            android:paddingBottom="8dp"
             android:visibility="gone">
 
             <!-- 字号行 -->
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="44dp"
+                android:layout_height="48dp"
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
-                android:layout_marginBottom="10dp">
+                android:layout_marginBottom="8dp">
 
                 <TextView
                     android:layout_width="36dp"
@@ -211,40 +211,101 @@
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnFontDec"
                     style="@style/Widget.Material3.Button.OutlinedButton"
-                    android:layout_width="52dp"
+                    android:layout_width="48dp"
                     android:layout_height="36dp"
                     android:text="A-"
-                    android:textSize="14sp"
+                    android:textSize="15sp"
                     android:padding="0dp"
-                    app:strokeColor="?attr/colorOutline" />
+                    app:strokeColor="?attr/colorOutline"
+                    app:cornerRadius="8dp" />
 
                 <TextView
                     android:id="@+id/tvFontSizeVal"
-                    android:layout_width="48dp"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
+                    android:layout_weight="1"
                     android:gravity="center"
-                    android:textSize="16sp"
+                    android:textSize="17sp"
                     android:textStyle="bold"
                     android:textColor="?android:attr/textColorPrimary" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnFontInc"
                     style="@style/Widget.Material3.Button.OutlinedButton"
-                    android:layout_width="52dp"
+                    android:layout_width="48dp"
                     android:layout_height="36dp"
                     android:text="A+"
-                    android:textSize="14sp"
+                    android:textSize="15sp"
                     android:padding="0dp"
-                    app:strokeColor="?attr/colorOutline" />
+                    app:strokeColor="?attr/colorOutline"
+                    app:cornerRadius="8dp" />
+            </LinearLayout>
 
-                <View android:layout_width="0dp" android:layout_height="0dp" android:layout_weight="1" />
+            <!-- 字体行 -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="44dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginBottom="8dp">
 
                 <TextView
-                    android:layout_width="wrap_content"
+                    android:layout_width="36dp"
                     android:layout_height="wrap_content"
-                    android:text="系统字体"
+                    android:text="字体"
                     android:textSize="12sp"
                     android:textColor="?android:attr/textColorSecondary" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnFontFamily1"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="0dp"
+                    android:layout_height="36dp"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="4dp"
+                    android:text="默认"
+                    android:textSize="13sp"
+                    android:padding="0dp"
+                    app:strokeColor="?attr/colorOutline"
+                    app:cornerRadius="8dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnFontFamily2"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="0dp"
+                    android:layout_height="36dp"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="4dp"
+                    android:text="宋体"
+                    android:textSize="13sp"
+                    android:padding="0dp"
+                    app:strokeColor="?attr/colorOutline"
+                    app:cornerRadius="8dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnFontFamily3"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="0dp"
+                    android:layout_height="36dp"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="4dp"
+                    android:text="楷体"
+                    android:textSize="13sp"
+                    android:padding="0dp"
+                    app:strokeColor="?attr/colorOutline"
+                    app:cornerRadius="8dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnFontFamily4"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="0dp"
+                    android:layout_height="36dp"
+                    android:layout_weight="1"
+                    android:text="黑体"
+                    android:textSize="13sp"
+                    android:padding="0dp"
+                    app:strokeColor="?attr/colorOutline"
+                    app:cornerRadius="8dp" />
             </LinearLayout>
 
             <!-- 行距行 -->
@@ -253,7 +314,7 @@
                 android:layout_height="44dp"
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
-                android:layout_marginBottom="10dp">
+                android:layout_marginBottom="8dp">
 
                 <TextView
                     android:layout_width="36dp"
@@ -269,10 +330,11 @@
                     android:layout_height="36dp"
                     android:layout_weight="1"
                     android:layout_marginEnd="4dp"
-                    android:text="密"
-                    android:textSize="13sp"
+                    android:text="紧凑"
+                    android:textSize="12sp"
                     android:padding="0dp"
-                    app:strokeColor="?attr/colorOutline" />
+                    app:strokeColor="?attr/colorOutline"
+                    app:cornerRadius="8dp" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnSpacing2"
@@ -281,10 +343,11 @@
                     android:layout_height="36dp"
                     android:layout_weight="1"
                     android:layout_marginEnd="4dp"
-                    android:text="适中"
-                    android:textSize="13sp"
+                    android:text="标准"
+                    android:textSize="12sp"
                     android:padding="0dp"
-                    app:strokeColor="?attr/colorOutline" />
+                    app:strokeColor="?attr/colorOutline"
+                    app:cornerRadius="8dp" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnSpacing3"
@@ -293,10 +356,11 @@
                     android:layout_height="36dp"
                     android:layout_weight="1"
                     android:layout_marginEnd="4dp"
-                    android:text="宽"
-                    android:textSize="13sp"
+                    android:text="舒适"
+                    android:textSize="12sp"
                     android:padding="0dp"
-                    app:strokeColor="?attr/colorOutline" />
+                    app:strokeColor="?attr/colorOutline"
+                    app:cornerRadius="8dp" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnSpacing4"
@@ -304,19 +368,20 @@
                     android:layout_width="0dp"
                     android:layout_height="36dp"
                     android:layout_weight="1"
-                    android:text="超宽"
-                    android:textSize="13sp"
+                    android:text="宽松"
+                    android:textSize="12sp"
                     android:padding="0dp"
-                    app:strokeColor="?attr/colorOutline" />
+                    app:strokeColor="?attr/colorOutline"
+                    app:cornerRadius="8dp" />
             </LinearLayout>
 
             <!-- 背景色行 -->
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="52dp"
+                android:layout_height="58dp"
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
-                android:layout_marginBottom="6dp">
+                android:layout_marginBottom="4dp">
 
                 <TextView
                     android:layout_width="36dp"
@@ -326,98 +391,66 @@
                     android:textColor="?android:attr/textColorSecondary" />
 
                 <View android:id="@+id/vBgWhite"
-                    android:layout_width="30dp"
-                    android:layout_height="30dp"
-                    android:layout_marginEnd="8dp"
+                    android:layout_width="0dp"
+                    android:layout_height="38dp"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="6dp"
                     android:clickable="true"
                     android:focusable="true" />
 
                 <View android:id="@+id/vBgCream"
-                    android:layout_width="30dp"
-                    android:layout_height="30dp"
-                    android:layout_marginEnd="8dp"
+                    android:layout_width="0dp"
+                    android:layout_height="38dp"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="6dp"
                     android:clickable="true"
                     android:focusable="true" />
 
                 <View android:id="@+id/vBgWarm"
-                    android:layout_width="30dp"
-                    android:layout_height="30dp"
-                    android:layout_marginEnd="8dp"
+                    android:layout_width="0dp"
+                    android:layout_height="38dp"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="6dp"
                     android:clickable="true"
                     android:focusable="true" />
 
                 <View android:id="@+id/vBgGreen"
-                    android:layout_width="30dp"
-                    android:layout_height="30dp"
-                    android:layout_marginEnd="8dp"
+                    android:layout_width="0dp"
+                    android:layout_height="38dp"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="6dp"
                     android:clickable="true"
                     android:focusable="true" />
 
                 <View android:id="@+id/vBgWarmYellow"
-                    android:layout_width="30dp"
-                    android:layout_height="30dp"
-                    android:layout_marginEnd="8dp"
+                    android:layout_width="0dp"
+                    android:layout_height="38dp"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="6dp"
                     android:clickable="true"
                     android:focusable="true" />
 
                 <View android:id="@+id/vBgNight"
-                    android:layout_width="30dp"
-                    android:layout_height="30dp"
-                    android:layout_marginEnd="8dp"
+                    android:layout_width="0dp"
+                    android:layout_height="38dp"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="6dp"
                     android:clickable="true"
                     android:focusable="true" />
 
                 <View android:id="@+id/vBgBlack"
-                    android:layout_width="30dp"
-                    android:layout_height="30dp"
+                    android:layout_width="0dp"
+                    android:layout_height="38dp"
+                    android:layout_weight="1"
                     android:clickable="true"
                     android:focusable="true" />
-            </LinearLayout>
-
-            <!-- 翻页行 -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="44dp"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:layout_marginBottom="10dp">
-
-                <TextView
-                    android:layout_width="36dp"
-                    android:layout_height="wrap_content"
-                    android:text="翻页"
-                    android:textSize="12sp"
-                    android:textColor="?android:attr/textColorSecondary" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnPageScroll"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
-                    android:layout_width="0dp"
-                    android:layout_height="36dp"
-                    android:layout_weight="1"
-                    android:layout_marginEnd="8dp"
-                    android:text="滚动"
-                    android:textSize="13sp"
-                    android:padding="0dp"
-                    app:strokeColor="?attr/colorOutline" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnPageFlip"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
-                    android:layout_width="0dp"
-                    android:layout_height="36dp"
-                    android:layout_weight="1"
-                    android:text="翻页"
-                    android:textSize="13sp"
-                    android:padding="0dp"
-                    app:strokeColor="?attr/colorOutline" />
             </LinearLayout>
 
             <View
                 android:layout_width="match_parent"
                 android:layout_height="1dp"
                 android:background="?attr/colorOutline"
-                android:alpha="0.25"
+                android:alpha="0.2"
                 android:layout_marginBottom="4dp" />
         </LinearLayout>
 

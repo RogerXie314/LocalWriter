@@ -63,11 +63,12 @@ class ReaderActivity : AppCompatActivity() {
     private var bookTitle: String = ""
 
     //  阅读偏好 
-    private var currentFontSize   = 18f
+    private var currentFontSize      = 18f
     private val fontSizeStep = 2f
     private val fontSizeMin  = 14f
     private val fontSizeMax  = 28f
-    private var currentSpacingIdx = 1
+    private var currentSpacingIdx    = 1
+    private var currentFontFamilyIdx = 0
     private var nightModeActive   = false
     private var activeBgColorIdx  = -1
 
@@ -99,6 +100,7 @@ class ReaderActivity : AppCompatActivity() {
         private const val KEY_SPACING       = "line_spacing"
         private const val KEY_NIGHT_MODE    = "night_mode"
         private const val KEY_BG_COLOR_IDX  = "bg_color_idx"
+        private const val KEY_FONT_FAMILY   = "font_family"
         private const val INFO_TOP_DP  = 44f
         private const val INFO_BOT_DP  = 36f
         private val SPACINGS = floatArrayOf(1.2f, 1.55f, 1.85f, 2.2f)
@@ -170,10 +172,11 @@ class ReaderActivity : AppCompatActivity() {
         }
 
         val prefs = getSharedPreferences(PREFS_READER, MODE_PRIVATE)
-        currentFontSize   = prefs.getFloat(KEY_FONT_SIZE, 18f)
-        currentSpacingIdx = prefs.getInt(KEY_SPACING, 1)
-        nightModeActive   = prefs.getBoolean(KEY_NIGHT_MODE, false)
-        activeBgColorIdx  = prefs.getInt(KEY_BG_COLOR_IDX, -1)
+        currentFontSize      = prefs.getFloat(KEY_FONT_SIZE, 18f)
+        currentSpacingIdx    = prefs.getInt(KEY_SPACING, 1)
+        nightModeActive      = prefs.getBoolean(KEY_NIGHT_MODE, false)
+        activeBgColorIdx     = prefs.getInt(KEY_BG_COLOR_IDX, -1)
+        currentFontFamilyIdx = prefs.getInt(KEY_FONT_FAMILY, 0)
 
         setupControls()
         setupPagedView()
@@ -198,6 +201,7 @@ class ReaderActivity : AppCompatActivity() {
             .putInt(KEY_SPACING, currentSpacingIdx)
             .putBoolean(KEY_NIGHT_MODE, nightModeActive)
             .putInt(KEY_BG_COLOR_IDX, activeBgColorIdx)
+            .putInt(KEY_FONT_FAMILY, currentFontFamilyIdx)
             .apply()
         savePagePosition()
     }
@@ -343,22 +347,47 @@ class ReaderActivity : AppCompatActivity() {
         binding.ibNavNight.setOnClickListener { toggleNightMode() }
         binding.ibNavSettings.setOnClickListener { togglePanel(1) }
 
+        binding.btnFontFamily1.setOnClickListener { setFontFamily(0) }
+        binding.btnFontFamily2.setOnClickListener { setFontFamily(1) }
+        binding.btnFontFamily3.setOnClickListener { setFontFamily(2) }
+        binding.btnFontFamily4.setOnClickListener { setFontFamily(3) }
+
         updateSpacingButtonStates(); updateBgCircles(); updateNightButton(); updateFontSizeDisplay()
+        updateFontFamilyButtons()
     }
 
     //  文字主题 
 
     private fun applyTextConfig() {
         val px = currentFontSize * resources.displayMetrics.density
+        binding.pagedTextView.setTypeface(getReaderTypeface(currentFontFamilyIdx))
         binding.pagedTextView.setTextConfig(px, SPACINGS[currentSpacingIdx], currentTextColor())
         updateFontSizeDisplay()
     }
 
     private fun setSpacing(idx: Int) { currentSpacingIdx = idx; updateSpacingButtonStates(); applyTextConfig() }
 
+    private fun setFontFamily(idx: Int) { currentFontFamilyIdx = idx; updateFontFamilyButtons(); applyTextConfig() }
+
+    private fun getReaderTypeface(idx: Int): android.graphics.Typeface = when (idx) {
+        1    -> android.graphics.Typeface.SERIF          // 宋体
+        2    -> android.graphics.Typeface.create("cursive", android.graphics.Typeface.NORMAL)  // 楷体
+        3    -> android.graphics.Typeface.SANS_SERIF     // 黑体
+        else -> android.graphics.Typeface.DEFAULT        // 默认
+    }
+
+    private fun updateFontFamilyButtons() {
+        val on = MaterialColors.getColor(this, com.google.android.material.R.attr.colorPrimaryContainer, Color.LTGRAY)
+        listOf(binding.btnFontFamily1, binding.btnFontFamily2, binding.btnFontFamily3, binding.btnFontFamily4)
+            .forEachIndexed { i, btn ->
+                btn.backgroundTintList = if (i == currentFontFamilyIdx) ColorStateList.valueOf(on) else ColorStateList.valueOf(Color.TRANSPARENT)
+            }
+    }
+
     private fun applyBgAndText() {
         val bg = currentBgColor(); val tc = currentTextColor()
         binding.pagedTextView.setBgColor(bg)
+        binding.pagedTextView.setTypeface(getReaderTypeface(currentFontFamilyIdx))
         binding.pagedTextView.setTextConfig(currentFontSize * resources.displayMetrics.density, SPACINGS[currentSpacingIdx], tc)
         applyControlPanelTheme(bg, tc)
     }
@@ -404,12 +433,20 @@ class ReaderActivity : AppCompatActivity() {
 
     private fun updateBgCircles() {
         val primary = MaterialColors.getColor(this, com.google.android.material.R.attr.colorPrimary, Color.GRAY)
+        val density = resources.displayMetrics.density
+        val r = (7 * density + 0.5f).toInt()
         listOf(binding.vBgWhite, binding.vBgCream, binding.vBgWarm,
                binding.vBgGreen, binding.vBgWarmYellow, binding.vBgNight, binding.vBgBlack)
             .forEachIndexed { i, v ->
+                val isActive = i == activeBgColorIdx
                 v.background = GradientDrawable().apply {
-                    shape = GradientDrawable.OVAL; setColor(BG_COLORS[i])
-                    setStroke(if (i == activeBgColorIdx) 4 else 1, if (i == activeBgColorIdx) primary else 0xFFBBBBBB.toInt())
+                    shape = GradientDrawable.RECTANGLE
+                    cornerRadius = r.toFloat()
+                    setColor(BG_COLORS[i])
+                    setStroke(
+                        if (isActive) (3 * density + 0.5f).toInt() else (1 * density + 0.5f).toInt(),
+                        if (isActive) primary else 0xFFCCCCCC.toInt()
+                    )
                 }
             }
     }
@@ -503,7 +540,7 @@ class ReaderActivity : AppCompatActivity() {
             applyControlPanelTheme(settings.backgroundColor, settings.textColor)
         } else { applyBgAndText() }
         if (settings != null && currentFontSize == 18f) currentFontSize = settings.fontSize.toFloat().coerceIn(fontSizeMin, fontSizeMax)
-        applyTextConfig(); updateFontSizeDisplay(); updateSpacingButtonStates(); updateBgCircles(); updateNightButton()
+        applyTextConfig(); updateFontSizeDisplay(); updateSpacingButtonStates(); updateFontFamilyButtons(); updateBgCircles(); updateNightButton()
     }
 
     //  章节导航 
