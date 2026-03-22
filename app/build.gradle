@@ -46,7 +46,6 @@ def buildDate() {
 android {
     namespace 'com.localwriter'
     compileSdk 35
-    buildToolsVersion "36.1.0"
 
     defaultConfig {
         applicationId "com.localwriter"
