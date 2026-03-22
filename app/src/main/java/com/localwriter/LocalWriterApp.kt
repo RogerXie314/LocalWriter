@@ -1,5 +1,5 @@
 package com.localwriter
-
+// build-trigger
 import android.app.Application
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
@@ -30,11 +30,15 @@ class LocalWriterApp : Application() {
 
     override fun onCreate() {
         super.onCreate()
-        // 当整个应用退到后台时自动触发锁定（由 onResume 中的 isLocked() 完成宽限期判断）
+        // 当整个应用退到后台时，根据用户设置的超时策略决定是否触发锁定。
+        // timeout=-1（从不自动锁定）时跳过 lock()，避免"重新进入时闪现认证界面"的问题。
         ProcessLifecycleOwner.get().lifecycle.addObserver(object : DefaultLifecycleObserver {
             override fun onStop(owner: LifecycleOwner) {
                 if (SessionManager.isLoggedIn(this@LocalWriterApp)) {
-                    SessionManager.lock(this@LocalWriterApp)
+                    val timeout = SessionManager.getLockTimeout(this@LocalWriterApp)
+                    if (timeout >= 0) {  // 仅在"立即锁定"或"N分钟"策略下才记录锁定
+                        SessionManager.lock(this@LocalWriterApp)
+                    }
                 }
             }
         })

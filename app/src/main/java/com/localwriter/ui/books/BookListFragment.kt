@@ -169,14 +169,22 @@ class BookListFragment : Fragment() {
     }
 
     private fun setupSortButton() {
-        binding.ibSortBooks.setOnClickListener { viewModel.toggleSort() }
-        // 根据排序模式更新图标颜色（激活状态高亮）
+        binding.ibSortBooks.setOnClickListener {
+            viewModel.toggleSort()
+        }
+        // 根据排序模式更新图标颜色并给出 Toast 提示（激活状态高亮）
         viewModel.isSortByRecent.observe(viewLifecycleOwner) { isRecent ->
             val tint = if (isRecent)
                 requireContext().getColor(android.R.color.holo_orange_light)
             else
                 requireContext().getColor(android.R.color.white)
             binding.ibSortBooks.setColorFilter(tint)
+            // 仅在用户主动切换后弹出提示（初始加载时 viewLifecycleOwner 尚未 STARTED，
+            // 利用 isResumed 过滤掉首次订阅触发的无操作回调）
+            if (isResumed) {
+                val msg = if (isRecent) "按最近阅读排序" else "按默认排序"
+                Toast.makeText(requireContext(), msg, Toast.LENGTH_SHORT).show()
+            }
         }
     }
 
@@ -539,6 +547,8 @@ class BookListFragment : Fragment() {
                 }
             } catch (e: Exception) {
                 Toast.makeText(ctx, "保存失败：${e.message}", Toast.LENGTH_LONG).show()
+            } catch (e: OutOfMemoryError) {
+                Toast.makeText(ctx, "文件过大，内存不足，请尝试分卷导入", Toast.LENGTH_LONG).show()
             }
         }
     }

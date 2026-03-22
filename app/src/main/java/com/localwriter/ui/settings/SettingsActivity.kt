@@ -362,9 +362,7 @@ class SettingsActivity : AppCompatActivity() {
             .show()
     }
 
-    /** 设置手势密码 */
-    /** 设置手势密码（直接嵌入视图，不走 FragmentManager，避免 Dialog 窗口与
-     *  Activity 窗口分离导致的 "No view found for id" 崩溃，修复回到书架的 bug） */
+    /** 设置手势密码（使用自定义样式对话框，贴合软件整体风格） */
     private fun showSetGestureDialog() {
         val userId = SessionManager.getUserId(this)
         if (userId == -1L) { toast("请先登录"); return }
@@ -375,13 +373,34 @@ class SettingsActivity : AppCompatActivity() {
         val tvHint      = gestureView.findViewById<android.widget.TextView>(R.id.tvGestureHint)
         val tvSwitch    = gestureView.findViewById<android.widget.TextView>(R.id.tvSwitchToPassword)
         tvSwitch.visibility = View.GONE
-        tvHint.text = "请绘制手势密码（至少连接4个点）"
+
+        // 使用与正文相同主题色
+        val primaryColor = com.google.android.material.color.MaterialColors.getColor(
+            binding.root, com.google.android.material.R.attr.colorPrimary)
+        val bgColor = com.google.android.material.color.MaterialColors.getColor(
+            binding.root, com.google.android.material.R.attr.colorSurface)
+
+        tvHint.apply {
+            text = "请绘制手势密码（至少连接4个点）"
+            textSize = 14f
+            setTextColor(primaryColor)
+            gravity = android.view.Gravity.CENTER
+        }
+
+        // 整体包裹 LinearLayout 加内边距，视觉更饱满
+        val wrapper = android.widget.LinearLayout(this).apply {
+            orientation = android.widget.LinearLayout.VERTICAL
+            setBackgroundColor(bgColor)
+            val dp16 = (16 * resources.displayMetrics.density).toInt()
+            setPadding(dp16, dp16, dp16, dp16)
+            addView(gestureView)
+        }
 
         var firstPattern: String? = null
 
-        val dialog = AlertDialog.Builder(this)
+        val dialog = com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
             .setTitle("设置手势密码")
-            .setView(gestureView)
+            .setView(wrapper)
             .setNegativeButton("取消", null)
             .create()
 
@@ -389,6 +408,24 @@ class SettingsActivity : AppCompatActivity() {
         suppressLockUntilMs = System.currentTimeMillis() + 30_000L
         dialog.setOnDismissListener {
             suppressLockUntilMs = System.currentTimeMillis() + 2_000L
+        }
+
+        // 对话框显示后调整尺寸，确保九宫格足够大
+        dialog.setOnShowListener {
+            val density = resources.displayMetrics.density
+            val screenW = resources.displayMetrics.widthPixels
+            val dialogW = (screenW * 0.88f).toInt()
+            // 高度 = 宽度 × 1.35（保证充足的九宫格 + 标题 + 提示 + 按钮区域）
+            dialog.window?.setLayout(dialogW, android.view.WindowManager.LayoutParams.WRAP_CONTENT)
+            // 九宫格强制正方形：约占对话框宽度 - 2×16dp 水平边距 - 2×16dp wrapper 边距
+            val gridSize = dialogW - (64 * density).toInt()
+            gestureView.layoutParams = android.widget.LinearLayout.LayoutParams(
+                android.widget.LinearLayout.LayoutParams.MATCH_PARENT, gridSize
+            )
+            wrapper.layoutParams = wrapper.layoutParams?.also {
+                (it as? android.view.ViewGroup.LayoutParams)?.height =
+                    (gridSize + (120 * density).toInt())
+            }
         }
 
         patternView.listener = object : com.localwriter.ui.auth.GesturePatternView.OnPatternListener {
@@ -404,12 +441,13 @@ class SettingsActivity : AppCompatActivity() {
                     return
                 }
                 if (firstPattern == null) {
-                    // 第一次绘制：记录，等待二次确认
                     firstPattern = patternStr
                     patternView.showSuccess()
-                    tvHint.postDelayed({ tvHint.text = "请再次绘制确认" }, 800)
+                    tvHint.apply {
+                        postDelayed({ text = "请再次绘制确认" }, 800)
+                        setTextColor(primaryColor)
+                    }
                 } else if (firstPattern == patternStr) {
-                    // 两次一致：保存
                     patternView.showSuccess()
                     lifecycleScope.launch {
                         (application as LocalWriterApp).authRepository
@@ -418,10 +456,12 @@ class SettingsActivity : AppCompatActivity() {
                         toast("手势密码已设置")
                     }
                 } else {
-                    // 两次不一致：重来
                     firstPattern = null
                     patternView.showError()
-                    tvHint.postDelayed({ tvHint.text = "两次不一致，请重新绘制" }, 800)
+                    tvHint.apply {
+                        postDelayed({ text = "两次不一致，请重新绘制" }, 800)
+                        setTextColor(android.graphics.Color.RED)
+                    }
                 }
             }
         }

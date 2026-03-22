@@ -24,6 +24,11 @@
 # Build logs and temporary debug scripts (auto-generated during CI/local debugging)
 build_*.txt
 do_build*.bat
+build.log
+temp/
+
+# VS Code workspace settings (machine-local)
+.vscode/
 
 *.apk
 dist_v*/

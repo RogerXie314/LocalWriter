@@ -145,6 +145,12 @@ class GestureLoginFragment : Fragment() {
         binding.root.postDelayed({ updateHint() }, delayMs)
     }
 
+    /** 验证失败时由外部调用：显示错误并在 1 秒后自动重置，方便用户重新绘制 */
+    fun onVerificationFailed() {
+        binding.gestureLockView.showError()
+        binding.tvGestureHint.text = "手势密码错误，请重试"
+    }
+
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null

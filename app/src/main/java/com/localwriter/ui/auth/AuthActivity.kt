@@ -93,6 +93,11 @@ class AuthActivity : AppCompatActivity() {
                 is AuthViewModel.AuthState.Error -> {
                     showLoading(false)
                     Toast.makeText(this, state.message, Toast.LENGTH_SHORT).show()
+                    // 手势登录失败时通知 Fragment 显示错误状态并自动重置，避免图案停留
+                    val frag = supportFragmentManager.findFragmentById(binding.flGestureContainer.id)
+                    if (frag is GestureLoginFragment) {
+                        frag.onVerificationFailed()
+                    }
                 }
             }
         }

@@ -111,33 +111,28 @@ class BookRepository(
             .distinct()
 
         var volSort = 0
-        val allChapters = mutableListOf<Chapter>()
+        var totalWords = 0
         for (volTitle in volumeOrder) {
             val volumeId = volumeDao.insert(
                 Volume(bookId = bookId, title = volTitle, sortOrder = volSort++)
             )
-            grouped[volTitle]?.forEachIndexed { index, sc ->
-                allChapters.add(
-                    Chapter(
-                        bookId    = bookId,
-                        volumeId  = volumeId,
-                        title     = sc.title,
-                        content   = sc.content,
-                        wordCount = sc.content.length,
-                        status    = "PUBLISHED",
-                        sortOrder = index
-                    )
+            val volChapters = grouped[volTitle] ?: continue
+            // 分批直接插入，避免 allChapters 大列表占用双倍内存
+            // 13 字段 × 75 章 = 975 < SQLITE_MAX_VARIABLE_NUMBER(999)
+            volChapters.mapIndexed { index, sc ->
+                Chapter(
+                    bookId    = bookId,
+                    volumeId  = volumeId,
+                    title     = sc.title,
+                    content   = sc.content,
+                    wordCount = sc.content.length,
+                    status    = "PUBLISHED",
+                    sortOrder = index
                 )
-            }
+            }.also { totalWords += it.sumOf { c -> c.wordCount } }
+             .chunked(75).forEach { chunk -> chapterDao.insertAll(chunk) }
         }
-
-        // 分批插入，避免 SQLite SQLITE_MAX_VARIABLE_NUMBER(999) 限制
-        // 13 个字段 × 75 章 = 975 < 999，安全批量大小
-        allChapters.chunked(75).forEach { chunk ->
-            chapterDao.insertAll(chunk)
-        }
-        val total = allChapters.sumOf { it.wordCount }
-        bookDao.updateWordCount(bookId, total)
+        bookDao.updateWordCount(bookId, totalWords)
         return bookId
     }
 }

@@ -171,9 +171,13 @@ class ReaderActivity : AppCompatActivity() {
             }
         }
 
-        // 监听系统栏 insets，记录高度用于沉浸模式下的安全内边距
+        // 监听系统栏 insets，记录高度用于沉浸模式下的安全内边距。
+        // 使用 statusBars 与 displayCutout 的最大值确保挖空屏/刘海屏上内容不被遮挡：
+        // 状态栏可见时 statusBars() > cutout；状态栏隐藏时取 cutout 保证安全区。
         androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(binding.readerRoot) { _, insets ->
-            systemStatusBarHeight = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.statusBars()).top
+            val statusTop = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.statusBars()).top
+            val cutoutTop = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.displayCutout()).top
+            systemStatusBarHeight = maxOf(statusTop, cutoutTop)
             systemNavBarHeight    = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.navigationBars()).bottom
             insets
         }
@@ -190,16 +194,13 @@ class ReaderActivity : AppCompatActivity() {
         activeBgColorIdx  = prefs.getInt(KEY_BG_COLOR_IDX, -1)
         pageMode          = prefs.getInt(KEY_PAGE_MODE, 1)
 
-        // 书签
-        binding.ivBookmarkIndicator.setOnClickListener { jumpToBookmark() }
+        // 书签（手动点击添加/删除）
+        binding.ivBookmarkIndicator.setOnClickListener { toggleBookmark() }
         binding.scrollView.viewTreeObserver.addOnScrollChangedListener {
-            val scrollY = binding.scrollView.scrollY
-            if (scrollY > 0) {
-                bookmarkHandler.removeCallbacks(bookmarkRunnable)
-                bookmarkHandler.postDelayed(bookmarkRunnable, 800)
-            }
             // 沉浸模式下实时更新阅读进度百分比
             if (!barsVisible) updateImmersiveInfo()
+            // 检查当前页是否在书签附近，更新书签指示器可见性
+            updateBookmarkIndicatorByPosition()
         }
 
         setupBottomControls()
@@ -289,7 +290,14 @@ class ReaderActivity : AppCompatActivity() {
                 panelRect.contains(ev.rawX.toInt(), ev.rawY.toInt())
             }
 
-            if (inContent && !inPanel) {
+            // 工具栏可见时，不拦截落在工具栏区域的触摸（保证返回按钮可点击）
+            val inAppBar = barsVisible && binding.appBarLayout.isShown && run {
+                val appBarRect = android.graphics.Rect()
+                binding.appBarLayout.getGlobalVisibleRect(appBarRect)
+                appBarRect.contains(ev.rawX.toInt(), ev.rawY.toInt())
+            }
+
+            if (inContent && !inPanel && !inAppBar) {
                 val gestureHandled = flipGestureDetector.onTouchEvent(ev)
                 if (gestureHandled) return true   // 手势已处理（点击/滑动），阻止子 View 重复处理
                 if (pageMode == 1) return true    // 翻页模式：阻止 ScrollView 滚动
@@ -438,28 +446,29 @@ class ReaderActivity : AppCompatActivity() {
         val prevPaddingTop = binding.scrollView.paddingTop
         val prevScrollY    = binding.scrollView.scrollY
 
-        // 隐藏沉浸模式顶部章节名
-        binding.tvImmersiveChapterHeader.visibility = View.GONE
+        // 隐藏沉浸模式顶部信息栏
+        binding.immersiveHeaderBar.visibility = View.GONE
+
+        // 使用已测量高度或预估值立即应用 padding 补偿（避免 post{} 导致的单帧跳动）
+        val estimatedToolbarH = if (binding.appBarLayout.height > 0) {
+            binding.appBarLayout.height
+        } else {
+            actionBarHeight + systemStatusBarHeight
+        }
+        val delta = estimatedToolbarH - prevPaddingTop
+        binding.scrollView.apply {
+            clipToPadding = false
+            setPadding(0, estimatedToolbarH, 0, 0)
+            if (delta != 0) scrollTo(0, (prevScrollY + delta).coerceAtLeast(0))
+        }
 
         // 工具栏从顶部滑入（覆盖在 scrollView 上方，不推挤内容）
         binding.appBarLayout.apply {
-            val startY = -(height.takeIf { it > 0 } ?: actionBarHeight).toFloat()
+            val startY = -(height.takeIf { it > 0 } ?: estimatedToolbarH).toFloat()
             alpha = 0f
             translationY = startY
             visibility = View.VISIBLE
             animate().alpha(1f).translationY(0f).setDuration(ANIM_DURATION).start()
-        }
-        // 工具栏布局完成后：将 paddingTop 设置为工具栏完整高度，
-        // 同时按差值调整 scrollY，使屏幕上可见的文字行保持原位。
-        binding.appBarLayout.post {
-            val toolbarH = binding.appBarLayout.height.takeIf { it > 0 }
-                ?: (actionBarHeight + systemStatusBarHeight)
-            val delta = toolbarH - prevPaddingTop
-            binding.scrollView.apply {
-                clipToPadding = false   // 背景延伸到工具栏背后，增加层次感
-                setPadding(0, toolbarH, 0, 0)
-                if (delta != 0) scrollTo(0, (prevScrollY + delta).coerceAtLeast(0))
-            }
         }
 
         // 底部控制面板从底部滑入
@@ -476,6 +485,7 @@ class ReaderActivity : AppCompatActivity() {
         binding.immersiveStatusBar.visibility = View.GONE
 
         updateFontSizeDisplay()
+        updateBookmarkIndicatorByPosition()  // 控制栏出现：刷新为灰色可添加状态
         resetAutoHideTimer()
     }
 
@@ -518,9 +528,20 @@ class ReaderActivity : AppCompatActivity() {
             hideAllPanels()
         }
 
-        // 显示沉浸模式状态栏
-        binding.immersiveStatusBar.visibility = View.VISIBLE
+        // 显示沉浸模式底部信息栏（背景/内边距跟随阅读主题和导航栏高度）
+        val bgColor = (binding.scrollView.background as? android.graphics.drawable.ColorDrawable)?.color
+            ?: 0xFFF8F3E3.toInt()
+        val density   = resources.displayMetrics.density
+        val horizPad  = (20 * density + 0.5f).toInt()
+        val topPad    = (6  * density + 0.5f).toInt()
+        val navBotPad = systemNavBarHeight + (6 * density + 0.5f).toInt()
+        binding.immersiveStatusBar.apply {
+            setBackgroundColor(bgColor)
+            setPadding(horizPad, topPad, horizPad, navBotPad)
+            visibility = View.VISIBLE
+        }
         updateImmersiveInfo()
+        updateBookmarkIndicatorByPosition()  // 进入沉浸模式：隐藏灰色书签图标
     }
 
     /**
@@ -535,10 +556,10 @@ class ReaderActivity : AppCompatActivity() {
         val statusH = if (systemStatusBarHeight > 0) systemStatusBarHeight
                       else (24 * density + 0.5f).toInt()
         val navH = if (systemNavBarHeight > 0) systemNavBarHeight else 0
-        // 顶部：状态栏 + 章节标题行高度(约36dp) + 8dp 缓冲
-        val top = statusH + (44 * density + 0.5f).toInt()
-        // 底部：导航栏 + 底部状态栏高度(约28dp)
-        val bot = navH + (32 * density + 0.5f).toInt()
+        // 顶部：状态栏/刘海高度 + 顶部信息栏内容(~24dp) + 天空留白(~28dp) = 52dp 附加量
+        val top = statusH + (52 * density + 0.5f).toInt()
+        // 底部：导航栏 + 底部信息栏内容(~26dp) + 地面留白(~10dp) = 36dp 附加量
+        val bot = navH  + (36 * density + 0.5f).toInt()
         val newScrollY = if (prevPaddingTop > top) {
             (prevScrollY - (prevPaddingTop - top)).coerceAtLeast(0)
         } else {
@@ -556,41 +577,89 @@ class ReaderActivity : AppCompatActivity() {
         applyImmersivePaddingCompensated(0, 0)
     }
 
-    /** 在沉浸模式顶部显示章节名（小字），高度与 paddingTop 中的留白对应 */
+    /**
+     * 显示沉浸模式顶部信息栏（章节标题 + 电量 + 时间）。
+     * paddingTop 动态设为状态栏/刘海高度，确保内容处于安全区内。
+     * 同步设置底部信息栏的背景色与文字颜色。
+     */
     private fun showImmersiveChapterHeader() {
         val density = resources.displayMetrics.density
         val statusH = if (systemStatusBarHeight > 0) systemStatusBarHeight
                       else (24 * density + 0.5f).toInt()
-        binding.tvImmersiveChapterHeader.apply {
-            text = binding.tvChapterTitle.text
-            val textColor = binding.tvContent.currentTextColor
-            setTextColor(textColor)
-            // 顶部 padding = 状态栏高度，文字紧贴状态栏下方
-            setPadding((20 * density + 0.5f).toInt(), statusH + (6 * density + 0.5f).toInt(),
-                       (20 * density + 0.5f).toInt(), (6 * density + 0.5f).toInt())
+        val navH    = if (systemNavBarHeight > 0) systemNavBarHeight else 0
+        val textColor = binding.tvContent.currentTextColor
+        val bgColor = (binding.scrollView.background as? android.graphics.drawable.ColorDrawable)?.color
+            ?: 0xFFF8F3E3.toInt()
+        val horizPad = (20 * density + 0.5f).toInt()
+        val btmPad   = (6  * density + 0.5f).toInt()
+
+        // 顶部信息栏：状态栏高度作为 paddingTop，内容紧贴安全区下方
+        binding.immersiveHeaderBar.apply {
+            setBackgroundColor(bgColor)
+            setPadding(horizPad, statusH + (2 * density + 0.5f).toInt(), horizPad, btmPad)
             visibility = View.VISIBLE
         }
-        // 底部状态栏文字颜色同步
-        val textColor = binding.tvContent.currentTextColor
-        binding.tvImmersiveProgress.setTextColor(textColor)
+        binding.tvImmersiveChapterHeader.apply {
+            text = binding.tvChapterTitle.text
+            setTextColor(textColor)
+        }
+        binding.tvImmersiveBattery.setTextColor(textColor)
         binding.tvImmersiveTime.setTextColor(textColor)
+
+        // 底部信息栏：paddingBottom 留出导航栏/手势指示条高度
+        binding.immersiveStatusBar.apply {
+            setBackgroundColor(bgColor)
+            setPadding(horizPad, (6 * density + 0.5f).toInt(),
+                       horizPad, navH + (6 * density + 0.5f).toInt())
+        }
+        binding.tvImmersiveProgress.setTextColor(textColor)
+        binding.tvImmersiveChapterIdx.setTextColor(textColor)
+
+        // 立即填充电量/时间/进度文字
+        updateImmersiveInfo()
+    }
+
+    /** 在背景色或文字色变化后，同步更新沉浸模式页眉/页脚背景颜色 */
+    private fun syncImmersiveBarColors() {
+        if (barsVisible) return
+        val bgColor = (binding.scrollView.background as? android.graphics.drawable.ColorDrawable)?.color
+            ?: return
+        val textColor = binding.tvContent.currentTextColor
+        if (binding.immersiveHeaderBar.visibility == View.VISIBLE) {
+            binding.immersiveHeaderBar.setBackgroundColor(bgColor)
+            binding.tvImmersiveChapterHeader.setTextColor(textColor)
+            binding.tvImmersiveBattery.setTextColor(textColor)
+            binding.tvImmersiveTime.setTextColor(textColor)
+        }
+        if (binding.immersiveStatusBar.visibility == View.VISIBLE) {
+            binding.immersiveStatusBar.setBackgroundColor(bgColor)
+            binding.tvImmersiveProgress.setTextColor(textColor)
+            binding.tvImmersiveChapterIdx.setTextColor(textColor)
+        }
     }
 
     // ─────────────────── 子面板切换 ───────────────────
 
     private fun togglePanel(id: Int) {
-        if (activePanel == id) {
-            activePanel = 0
-            binding.panelSettings.visibility   = View.GONE
-            binding.panelBrightness.visibility = View.GONE
-            resetAutoHideTimer()
-        } else {
-            activePanel = id
-            binding.panelSettings.visibility   = if (id == 1) View.VISIBLE else View.GONE
-            binding.panelBrightness.visibility = if (id == 2) View.VISIBLE else View.GONE
-            // 子面板打开时暂停自动隐藏，防止用户操作被打断
-            autoHideHandler.removeCallbacks(autoHideRunnable)
+        val newPanel = if (activePanel == id) 0 else id
+        activePanel = newPanel
+
+        // 淡入/淡出子面板，避免高度突变引起视觉跳动
+        fun animatePanel(view: View, show: Boolean) {
+            if (show) {
+                view.alpha = 0f
+                view.visibility = View.VISIBLE
+                view.animate().alpha(1f).setDuration(120L).start()
+            } else if (view.visibility == View.VISIBLE) {
+                view.animate().alpha(0f).setDuration(100L)
+                    .withEndAction { view.visibility = View.GONE; view.alpha = 1f }.start()
+            }
         }
+        animatePanel(binding.panelSettings, newPanel == 1)
+        animatePanel(binding.panelBrightness, newPanel == 2)
+
+        if (newPanel == 0) resetAutoHideTimer()
+        else autoHideHandler.removeCallbacks(autoHideRunnable)
     }
 
     private fun hideAllPanels() {
@@ -627,11 +696,9 @@ class ReaderActivity : AppCompatActivity() {
         binding.scrollView.setBackgroundColor(BG_COLORS[idx])
         binding.tvContent.setTextColor(TEXT_COLORS[idx])
         binding.tvChapterTitle.setTextColor(TEXT_COLORS[idx])
-        // 同步沉浸模式顶部章节名颜色
-        if (binding.tvImmersiveChapterHeader.visibility == View.VISIBLE) {
-            binding.tvImmersiveChapterHeader.setTextColor(TEXT_COLORS[idx])
-        }
         applyControlPanelTheme(BG_COLORS[idx], TEXT_COLORS[idx])
+        // 同步更新沉浸模式页眉页脚背景色
+        syncImmersiveBarColors()
     }
 
     /**
@@ -706,6 +773,7 @@ class ReaderActivity : AppCompatActivity() {
         binding.tvContent.setTextColor(0xFFCCCCCC.toInt())
         binding.tvChapterTitle.setTextColor(0xFFBBBBBB.toInt())
         applyControlPanelTheme(0xFF1A1A2E.toInt(), 0xFFCCCCCC.toInt())
+        syncImmersiveBarColors()
         val attr = window.attributes
         if (attr.screenBrightness < 0 || attr.screenBrightness > 0.4f) {
             attr.screenBrightness = 0.3f
@@ -746,33 +814,53 @@ class ReaderActivity : AppCompatActivity() {
         }
     }
 
-    /** 更新沉浸模式底部状态栏（阅读进度% + 章节进度 + 当前时间），颜色跟随正文主题 */
+    /** 更新沉浸模式顶部（电量 + 时间）和底部（阅读进度% + 章节 x/n）信息栏 */
     private fun updateImmersiveInfo() {
         val total = allChapterIds.size
         val chapterText = if (total > 0) "${currentIndex + 1}/$total 章" else "-/-"
 
-        // 计算章节内滚动百分比
+        // 章节内阅读百分比
         val child = binding.scrollView.getChildAt(0)
         val progressText = if (child != null) {
             val maxScroll = (child.height - binding.scrollView.height).coerceAtLeast(1)
             val pct = ((binding.scrollView.scrollY.toFloat() / maxScroll) * 100)
                 .toInt().coerceIn(0, 100)
             "$pct%"
-        } else ""
+        } else "0%"
 
-        binding.tvImmersiveProgress.text =
-            if (progressText.isNotEmpty()) "$progressText · $chapterText" else chapterText
+        // 底部：进度% 左 / 章节 x/n 右
+        binding.tvImmersiveProgress.text = progressText
+        binding.tvImmersiveChapterIdx.text = chapterText
 
+        // 顶部右侧：电量 + 时间
+        binding.tvImmersiveBattery.text = "${readBatteryPct()}%"
         val cal = java.util.Calendar.getInstance()
         binding.tvImmersiveTime.text = String.format(
             java.util.Locale.getDefault(), "%02d:%02d",
             cal.get(java.util.Calendar.HOUR_OF_DAY),
             cal.get(java.util.Calendar.MINUTE)
         )
-        // 文字颜色跟随当前阅读主题，确保与背景形成对比
+
+        // 所有信息文字颜色跟随阅读主题，确保与背景对比
         val textColor = binding.tvContent.currentTextColor
         binding.tvImmersiveProgress.setTextColor(textColor)
+        binding.tvImmersiveChapterIdx.setTextColor(textColor)
+        binding.tvImmersiveBattery.setTextColor(textColor)
         binding.tvImmersiveTime.setTextColor(textColor)
+    }
+
+    /**
+     * 读取当前电池电量百分比（0-100）。
+     * 使用粘性广播一次性读取，无需注册接收器。
+     */
+    private fun readBatteryPct(): Int {
+        val intent = registerReceiver(
+            null,
+            android.content.IntentFilter(android.content.Intent.ACTION_BATTERY_CHANGED)
+        )
+        val level = intent?.getIntExtra(android.os.BatteryManager.EXTRA_LEVEL, -1) ?: -1
+        val scale = intent?.getIntExtra(android.os.BatteryManager.EXTRA_SCALE, -1) ?: -1
+        return if (level >= 0 && scale > 0) (level * 100 / scale) else 0
     }
 
     private fun applyFontSize() {
@@ -811,6 +899,7 @@ class ReaderActivity : AppCompatActivity() {
         updateFontSizeDisplay()
         updateSpacingButtonStates()
         updateBgCircles()
+        syncImmersiveBarColors()
     }
 
     private suspend fun restoreUserThemeColors() {
@@ -848,7 +937,11 @@ class ReaderActivity : AppCompatActivity() {
         }
     }
 
-    private fun loadChapter(chapId: Long) {
+    /**
+     * 加载指定章节内容。
+     * @param startAtEnd true 时章节加载完成后滚动到末尾（向前翻越过章节边界时使用）。
+     */
+    private fun loadChapter(chapId: Long, startAtEnd: Boolean = false) {
         lifecycleScope.launch {
             val db = (application as LocalWriterApp).database
             val chapter = withContext(Dispatchers.IO) {
@@ -864,7 +957,7 @@ class ReaderActivity : AppCompatActivity() {
             supportActionBar?.title = chapter.title
             binding.tvChapterTitle.text = chapter.title
             // 同步更新沉浸模式顶部章节名
-            if (!barsVisible && binding.tvImmersiveChapterHeader.visibility == View.VISIBLE) {
+            if (!barsVisible && binding.immersiveHeaderBar.visibility == View.VISIBLE) {
                 binding.tvImmersiveChapterHeader.text = chapter.title
             }
             // 每段首行添加全角空格缩进（仿真实书籍排版）
@@ -880,8 +973,20 @@ class ReaderActivity : AppCompatActivity() {
             val total = allChapterIds.size
             binding.tvChapterProgress.text = "${currentIndex + 1} / $total 章"
 
-            val scrollY = chapter.lastScrollPos
-            binding.scrollView.post { binding.scrollView.scrollTo(0, scrollY) }
+            if (startAtEnd) {
+                // 向前翻越过章节边界：等待 Layout 完成后跳到章节末尾
+                binding.scrollView.post {
+                    val sv   = binding.scrollView
+                    val child = sv.getChildAt(0)
+                    if (child != null) {
+                        val pageH = (sv.height - sv.paddingTop - sv.paddingBottom).coerceAtLeast(1)
+                        sv.scrollTo(0, (child.height - pageH).coerceAtLeast(0))
+                    }
+                }
+            } else {
+                val scrollY = chapter.lastScrollPos
+                binding.scrollView.post { binding.scrollView.scrollTo(0, scrollY) }
+            }
             updateBookmarkIndicator()
             updateFontSizeDisplay()
             if (!barsVisible) updateImmersiveInfo()
@@ -894,11 +999,16 @@ class ReaderActivity : AppCompatActivity() {
 
     // ─────────────────── 导航 ───────────────────
 
+    /**
+     * 跳转到上/下相邻章节。
+     * 向后翻（direction>0）→ 新章节从顶部开始阅读；
+     * 向前翻（direction<0）→ 跳到新章节末尾（符合翻页阅读直觉：可继续向前翻页）。
+     */
     private fun navigateChapter(direction: Int) {
         val newIndex = currentIndex + direction
         if (newIndex < 0 || newIndex >= allChapterIds.size) return
         saveScrollPosition()
-        loadChapter(allChapterIds[newIndex])
+        loadChapter(allChapterIds[newIndex], startAtEnd = direction < 0)
         binding.scrollView.scrollTo(0, 0)
     }
 
@@ -907,11 +1017,14 @@ class ReaderActivity : AppCompatActivity() {
      * direction > 0 = 向后；direction < 0 = 向前。
      * 翻页模式下带水平滑入动画；滚动模式下仍用 smoothScrollTo。
      * 已到末尾/开头时切换到下一章/上一章。
+     *
+     * 核心修正：targetY 经过 [snapToLineTop] 对齐到最近的完整行顶部，
+     * 避免多次翻页后上下出现半行文字。
      */
     private fun navigatePage(direction: Int) {
         val sv = binding.scrollView
         val child = sv.getChildAt(0) ?: return
-        // 扣除沉浸模式安全 padding，计算真实可视区域高度，避免翻页时跳过内容或显示半行
+        // 扣除沉浸模式安全 padding，计算真实可视区域高度
         val pageHeight = (sv.height - sv.paddingTop - sv.paddingBottom).coerceAtLeast(1)
         val contentHeight = child.measuredHeight.takeIf { it > 0 } ?: child.height
         val currentY = sv.scrollY
@@ -920,7 +1033,8 @@ class ReaderActivity : AppCompatActivity() {
             if (currentY >= maxScroll - SCROLL_TOLERANCE) {
                 navigateChapter(1)
             } else {
-                val targetY = (currentY + pageHeight).coerceAtMost(maxScroll)
+                val rawTarget = (currentY + pageHeight).coerceAtMost(maxScroll)
+                val targetY   = snapToLineTop(rawTarget)
                 if (pageMode == 1) slideAnimatePage(targetY, direction)
                 else sv.smoothScrollTo(0, targetY)
             }
@@ -928,11 +1042,31 @@ class ReaderActivity : AppCompatActivity() {
             if (currentY <= SCROLL_TOLERANCE) {
                 navigateChapter(-1)
             } else {
-                val targetY = (currentY - pageHeight).coerceAtLeast(0)
+                val rawTarget = (currentY - pageHeight).coerceAtLeast(0)
+                val targetY   = snapToLineTop(rawTarget)
                 if (pageMode == 1) slideAnimatePage(targetY, direction)
                 else sv.smoothScrollTo(0, targetY)
             }
         }
+    }
+
+    /**
+     * 将 scrollY 对齐到 tvContent 内最近的完整行顶部。
+     *
+     * 坐标映射：
+     *   scrollY（LinearLayout 坐标）→ tvContent 内部 layoutY = scrollY - tvContent.top - tvContent.paddingTop
+     *   → Layout.getLineForVertical(layoutY) 找到对应行
+     *   → Layout.getLineTop(line) 得到行顶部偏移
+     *   → 映射回 scrollY
+     */
+    private fun snapToLineTop(rawScrollY: Int): Int {
+        val layout   = binding.tvContent.layout ?: return rawScrollY
+        val tvTop    = binding.tvContent.top
+        val tvPadTop = binding.tvContent.paddingTop
+        val layoutY  = rawScrollY - tvTop - tvPadTop
+        if (layoutY < 0 || layoutY > layout.height) return rawScrollY
+        val line = layout.getLineForVertical(layoutY)
+        return (layout.getLineTop(line) + tvTop + tvPadTop).coerceAtLeast(0)
     }
 
     /**
@@ -996,18 +1130,77 @@ class ReaderActivity : AppCompatActivity() {
 
     // ─────────────────── 书签 ───────────────────
 
-    private fun saveBookmark() {
+    /** 手动切换书签：当前页无书签则添加；有书签且当前在书签附近则删除 */
+    private fun toggleBookmark() {
         val scrollY = binding.scrollView.scrollY
-        if (scrollY <= 0) return
-        getSharedPreferences(PREFS_READER, MODE_PRIVATE).edit()
-            .putInt("$KEY_BOOKMARK_PRE$chapterId", scrollY).apply()
-        binding.ivBookmarkIndicator.visibility = View.VISIBLE
+        val saved = getSharedPreferences(PREFS_READER, MODE_PRIVATE)
+            .getInt("$KEY_BOOKMARK_PRE$chapterId", -1)
+        if (saved > 0 && Math.abs(scrollY - saved) <= getPageHeight()) {
+            // 已在书签页，点击删除书签
+            getSharedPreferences(PREFS_READER, MODE_PRIVATE).edit()
+                .remove("$KEY_BOOKMARK_PRE$chapterId").apply()
+            updateBookmarkIndicatorByPosition()
+            Toast.makeText(this, "已删除书签", Toast.LENGTH_SHORT).show()
+        } else {
+            // 不在书签页（或无书签），点击添加书签到当前位置
+            getSharedPreferences(PREFS_READER, MODE_PRIVATE).edit()
+                .putInt("$KEY_BOOKMARK_PRE$chapterId", scrollY).apply()
+            updateBookmarkIndicatorByPosition()
+            Toast.makeText(this, "已添加书签", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun getPageHeight(): Int {
+        val sv = binding.scrollView
+        return (sv.height - sv.paddingTop - sv.paddingBottom).coerceAtLeast(1)
+    }
+
+    /**
+     * 书签指示器状态规则（兼顾阅读沉浸感与操作可发现性）：
+     *
+     * 沉浸模式（barsVisible=false）：
+     *   - 当前页有书签 → 红色图标（提醒此处有书签，点击可删除）
+     *   - 当前页无书签 → 隐藏（不干扰正文阅读）
+     *
+     * 控制栏可见（barsVisible=true）：
+     *   - 当前页有书签 → 红色图标
+     *   - 其余情况     → 浅灰图标（提示可点击添加书签）
+     */
+    private fun updateBookmarkIndicatorByPosition() {
+        val saved = getSharedPreferences(PREFS_READER, MODE_PRIVATE)
+            .getInt("$KEY_BOOKMARK_PRE$chapterId", -1)
+        val scrollY = binding.scrollView.scrollY
+        val isOnBookmarkPage = saved > 0 && Math.abs(scrollY - saved) <= getPageHeight()
+
+        when {
+            isOnBookmarkPage -> {
+                // 在书签页：红色书签（沉浸/非沉浸都显示）
+                binding.ivBookmarkIndicator.apply {
+                    imageTintList = android.content.res.ColorStateList.valueOf(0xFFE53935.toInt())
+                    visibility = View.VISIBLE
+                }
+            }
+            barsVisible -> {
+                // 控制栏可见时：浅灰图标（可添加书签）
+                binding.ivBookmarkIndicator.apply {
+                    imageTintList = android.content.res.ColorStateList.valueOf(0x99888888.toInt())
+                    visibility = View.VISIBLE
+                }
+            }
+            else -> {
+                // 沉浸模式且不在书签页：完全隐藏，不干扰阅读
+                binding.ivBookmarkIndicator.visibility = View.GONE
+            }
+        }
     }
 
     private fun updateBookmarkIndicator() {
-        val saved = getSharedPreferences(PREFS_READER, MODE_PRIVATE)
-            .getInt("$KEY_BOOKMARK_PRE$chapterId", -1)
-        binding.ivBookmarkIndicator.visibility = if (saved > 0) View.VISIBLE else View.GONE
+        updateBookmarkIndicatorByPosition()
+    }
+
+    private fun saveBookmark() {
+        // 保留此方法供 onPause 调用（无自动保存逻辑，此处仅作读取位置存档）
+        // 真实书签已改为手动添加，无需在此自动保存
     }
 
     private fun jumpToBookmark() {
@@ -1051,7 +1244,7 @@ class ReaderActivity : AppCompatActivity() {
                 binding.scrollView.smoothScrollTo(0, scrollY)
                 Toast.makeText(this, "已跳转到书签位置", Toast.LENGTH_SHORT).show()
             } else {
-                Toast.makeText(this, "当前章节暂无书签，滚动时会自动保存", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "当前章节暂无书签，可点击右上角书签图标添加", Toast.LENGTH_SHORT).show()
             }
         }
 

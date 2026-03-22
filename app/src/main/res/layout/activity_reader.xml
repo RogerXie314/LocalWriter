@@ -71,7 +71,7 @@
         </LinearLayout>
     </ScrollView>
 
-    <!-- 书签指示器 -->
+    <!-- 书签指示器（右上角，始终可见；灰色=无书签/可添加，红色=当前页有书签/可删除，翻页后隐藏） -->
     <ImageView
         android:id="@+id/ivBookmarkIndicator"
         android:layout_width="28dp"
@@ -80,27 +80,60 @@
         android:layout_marginTop="64dp"
         android:layout_marginEnd="12dp"
         android:src="@drawable/ic_bookmark"
-        android:tint="#E53935"
-        android:visibility="gone"
+        android:tint="#66888888"
         android:elevation="6dp"
         android:contentDescription="书签" />
 
-    <!-- 沉浸模式顶部章节名（小字固定显示，非沉浸时隐藏） -->
-    <TextView
-        android:id="@+id/tvImmersiveChapterHeader"
+    <!--
+        沉浸模式顶部信息栏：[章节标题]  [电量%  时间]
+        paddingTop 由代码根据状态栏/刘海高度动态设置，确保内容不被摄像头遮挡。
+    -->
+    <LinearLayout
+        android:id="@+id/immersiveHeaderBar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="top"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
         android:paddingHorizontal="20dp"
         android:paddingBottom="6dp"
-        android:textSize="11sp"
-        android:maxLines="1"
-        android:ellipsize="end"
-        android:alpha="0.5"
         android:elevation="4dp"
-        android:visibility="gone" />
+        android:visibility="gone">
 
-    <!-- 沉浸模式底部状态栏（章节进度 + 当前时间，控制面板隐藏时显示） -->
+        <!-- 章节标题（左对齐，超长截断） -->
+        <TextView
+            android:id="@+id/tvImmersiveChapterHeader"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:textSize="11sp"
+            android:alpha="0.72" />
+
+        <!-- 电量百分比（右侧） -->
+        <TextView
+            android:id="@+id/tvImmersiveBattery"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="11sp"
+            android:alpha="0.72"
+            android:layout_marginEnd="10dp" />
+
+        <!-- 当前时间（右侧最末） -->
+        <TextView
+            android:id="@+id/tvImmersiveTime"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="11sp"
+            android:alpha="0.72" />
+
+    </LinearLayout>
+
+    <!--
+        沉浸模式底部信息栏：[阅读进度%]  [章节 x/n]
+        paddingBottom 由代码根据导航栏/手势指示条高度动态设置。
+    -->
     <LinearLayout
         android:id="@+id/immersiveStatusBar"
         android:layout_width="match_parent"
@@ -108,24 +141,26 @@
         android:layout_gravity="bottom"
         android:orientation="horizontal"
         android:paddingHorizontal="20dp"
-        android:paddingVertical="8dp"
+        android:paddingTop="6dp"
         android:elevation="4dp"
         android:visibility="gone">
 
+        <!-- 章节内阅读百分比（左） -->
         <TextView
             android:id="@+id/tvImmersiveProgress"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:textSize="11sp"
-            android:alpha="0.5" />
+            android:alpha="0.72" />
 
+        <!-- 章节编号 x/n（右） -->
         <TextView
-            android:id="@+id/tvImmersiveTime"
+            android:id="@+id/tvImmersiveChapterIdx"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:textSize="11sp"
-            android:alpha="0.5" />
+            android:alpha="0.72" />
 
     </LinearLayout>
 

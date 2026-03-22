@@ -16,6 +16,28 @@ def gitCommitCount() {
     }
 }
 
+// ── 自动从 Git tag 获取 versionName（最近一个 semver tag，如 v1.6.0）───
+// 规则：有精确 tag → 取 tag（去掉前缀 v）；有提交偏移 → 追加 -N-gHASH；
+//       无任何 tag  → 降级为 "0.0.1-SNAPSHOT"。
+def gitVersionName() {
+    try {
+        def proc = 'git describe --tags --long --match v[0-9]*'.execute(new String[0], rootDir)
+        proc.waitFor()
+        def raw = proc.text.trim()
+        if (!raw) return "0.0.1-SNAPSHOT"
+        // 格式: v1.6.0-0-gabcdef1  或  v1.6.0-3-gabcdef1
+        def m = (raw =~ /^v?(.+)-(\d+)-g[0-9a-f]+$/)
+        if (m.matches()) {
+            def base   = m.group(1)   // e.g. "1.6.0"
+            def offset = m.group(2).toInteger()
+            return offset == 0 ? base : "${base}-${offset}-SNAPSHOT"
+        }
+        return raw.replaceFirst(/^v/, '')
+    } catch (ignored) {
+        return "0.0.1-SNAPSHOT"
+    }
+}
+
 // 构建日期（格式 yyyy-MM-dd）
 def buildDate() {
     return new Date().format('yyyy-MM-dd')
@@ -23,15 +45,15 @@ def buildDate() {
 
 android {
     namespace 'com.localwriter'
-    compileSdk 36
+    compileSdk 35
     buildToolsVersion "36.1.0"
 
     defaultConfig {
         applicationId "com.localwriter"
         minSdk 26
-        targetSdk 36
+        targetSdk 35
         versionCode gitCommitCount()
-        versionName "1.6.0"
+        versionName gitVersionName()
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
 
         // ── 产品 / 作者信息（通过 BuildConfig 在代码中可读）──────────────
@@ -46,24 +68,21 @@ android {
         release {
             minifyEnabled true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-            // release 包命名：LocalWriter-v{versionName}.apk
-            android.applicationVariants.all { variant ->
-                if (variant.buildType.name == "release") {
-                    variant.outputs.all {
-                        outputFileName = "LocalWriter-v${variant.versionName}.apk"
-                    }
-                }
-            }
+            // CI 环境用 debug key 签名；生产发布时替换为正式 signingConfig
+            signingConfig signingConfigs.debug
         }
         debug {
             minifyEnabled false
-            // debug 包命名：LocalWriter-v{versionName}-dev.apk（去掉默认 -debug 字样）
-            android.applicationVariants.all { variant ->
-                if (variant.buildType.name == "debug") {
-                    variant.outputs.all {
-                        outputFileName = "LocalWriter-v${variant.versionName}-dev.apk"
-                    }
-                }
+        }
+    }
+
+    // APK 自定义命名
+    applicationVariants.all { variant ->
+        variant.outputs.all { output ->
+            if (variant.buildType.name == "release") {
+                outputFileName = "LocalWriter-v${variant.versionName}.apk"
+            } else if (variant.buildType.name == "debug") {
+                outputFileName = "LocalWriter-v${variant.versionName}-dev.apk"
             }
         }
     }
